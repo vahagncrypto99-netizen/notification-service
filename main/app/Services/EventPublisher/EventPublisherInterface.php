@@ -9,7 +9,7 @@ use App\Dto\EventEnvelopeDto;
 interface EventPublisherInterface
 {
     /**
-     * Публикация события наружу (для других сервисов).
+     * Публикация события наружу.
      *
      * @throws \Throwable при сбое публикации
      */

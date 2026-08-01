@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Base\Notification\Services;
 
 use App\Base\Notification\Reports\ReportFormatterResolver;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use App\Exceptions\OperationException;
+use App\Models\NotificationReport;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportFileStorage
 {
@@ -14,7 +17,7 @@ class ReportFileStorage
      */
     public function __construct(
         private readonly ReportFormatterResolver $formatter_resolver,
-        private readonly Filesystem $disk
+        private readonly FilesystemAdapter $disk
     ) {
         //
     }
@@ -40,6 +43,25 @@ class ReportFileStorage
         $this->disk->move($tmp_path, $final_path);
 
         return $final_path;
+    }
+
+    /**
+     * Отдать файл готового отчёта на скачивание.
+     *
+     * @throws OperationException если файл отсутствует на диске
+     */
+    public function download(NotificationReport $report) : StreamedResponse
+    {
+        if ($report->file_path === null || ! $this->disk->exists($report->file_path)) {
+            throw new OperationException('Файл отчёта недоступен.', 409);
+        }
+
+        $extension = pathinfo($report->file_path, PATHINFO_EXTENSION);
+
+        return $this->disk->download(
+            $report->file_path,
+            "notification_report_{$report->id}.{$extension}"
+        );
     }
 
     /**

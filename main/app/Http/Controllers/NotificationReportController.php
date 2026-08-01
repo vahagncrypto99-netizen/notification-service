@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Base\Notification\Manager;
+use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationReportResource;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class NotificationReportController extends Controller
 {
@@ -29,47 +31,58 @@ class NotificationReportController extends Controller
      */
     public function store(Request $request) : JsonResponse
     {
-        $report = $this->manager->requestReport(RequestReportDto::validateAndCreate($request->all()));
+        try {
+            $report = $this->manager->requestReport(
+                RequestReportDto::validateAndCreate($request->all())
+            );
 
-        return (new NotificationReportResource($report))->response()->setStatusCode(201);
+            return ApiResponse::success('Генерация отчёта запрошена.', 201, [
+                'report' => new NotificationReportResource($report),
+            ]);
+        } catch (ValidationException $exception) {
+            return ApiResponse::error('Ошибка валидации.', 422, ['errors' => $exception->errors()]);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 
     /**
      * Статус готовности отчёта.
      */
-    public function show(int $report_id) : NotificationReportResource
+    public function show(int $report_id) : JsonResponse
     {
-        $report = $this->manager->findReport($report_id);
+        try {
+            $report = $this->manager->getReport($report_id);
 
-        abort_if($report === null, 404);
+            return ApiResponse::success('Отчёт получен.', 200, [
+                'report' => new NotificationReportResource($report),
+            ]);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return new NotificationReportResource($report);
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 
     /**
      * Скачивание готового отчёта.
      */
-    public function download(int $report_id) : StreamedResponse
+    public function download(int $report_id) : Response
     {
-        $report = $this->manager->findReport($report_id);
+        try {
+            return $this->manager->downloadReport($report_id);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
 
-        abort_if($report === null, 404);
-
-        abort_if(
-            $report->status !== ReportStatusEnum::Done || $report->file_path === null,
-            409,
-            'Отчёт ещё не готов к скачиванию.'
-        );
-
-        $disk = (string) config('notification.reports.disk');
-
-        abort_if(! Storage::disk($disk)->exists($report->file_path), 409, 'Файл отчёта недоступен.');
-
-        $extension = pathinfo($report->file_path, PATHINFO_EXTENSION);
-
-        return Storage::disk($disk)->download(
-            $report->file_path,
-            "notification_report_{$report->id}.{$extension}"
-        );
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 }

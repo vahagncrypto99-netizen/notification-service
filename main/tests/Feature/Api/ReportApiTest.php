@@ -22,7 +22,7 @@ describe('запрос генерации отчёта', function () : void {
 
         $response = apiPost('/api/reports', $payload);
 
-        $response->assertCreated()->assertJsonPath('data.status', 'pending');
+        $response->assertCreated()->assertJsonPath('payload.report.status', 'pending');
 
         Queue::assertPushed(GenerateReportJob::class, 1);
     });
@@ -34,7 +34,7 @@ describe('запрос генерации отчёта', function () : void {
             'period_to' => '2026-07-01',
         ];
 
-        apiPost('/api/reports', $payload)->assertUnprocessable()->assertJsonValidationErrors(['period_to']);
+        apiPost('/api/reports', $payload)->assertUnprocessable()->assertJsonValidationErrors(['period_to'], 'payload.errors');
     });
 
     it('отклоняет некорректные даты', function () : void {
@@ -134,9 +134,9 @@ describe('статус и скачивание', function () : void {
         $report = NotificationReport::factory()->failed()->create();
 
         apiGet("/api/reports/{$report->id}")->assertOk()->assertJsonPath(
-            'data.status',
+            'payload.report.status',
             'failed'
-        )->assertJsonPath('data.error', 'Simulated report generation failure.');
+        )->assertJsonPath('payload.report.error', 'Simulated report generation failure.');
     });
 
     it('возвращает 404 для несуществующего отчёта', function () : void {

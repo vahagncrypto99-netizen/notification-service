@@ -31,6 +31,9 @@ class NotificationEventSubscriber
 
     /**
      * Уведомление успешно отправлено.
+     *
+     *
+     * @throws Throwable
      */
     public function handleSent(NotificationSent $event) : void
     {
@@ -46,6 +49,9 @@ class NotificationEventSubscriber
 
     /**
      * Доставка уведомления завершилась ошибкой (попытки исчерпаны).
+     *
+     *
+     * @throws Throwable
      */
     public function handleFailed(NotificationFailed $event) : void
     {
@@ -65,10 +71,8 @@ class NotificationEventSubscriber
     /**
      * Публикация события наружу.
      *
-     * Текст уведомления в конверт не попадает (нечего размазывать
-     * потенциально чувствительные данные по подписчикам). Сбой публикации
-     * не ломает доставку — уведомление уже в терминальном статусе;
-     * ошибка уходит в Sentry через report().
+     *
+     * @throws Throwable
      */
     private function publishEvent(string $type, Notification $notification) : void
     {

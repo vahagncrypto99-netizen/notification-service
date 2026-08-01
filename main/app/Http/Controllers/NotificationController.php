@@ -7,10 +7,13 @@ namespace App\Http\Controllers;
 use App\Base\Notification\Dto\CreateNotificationDto;
 use App\Base\Notification\Dto\NotificationHistoryDto;
 use App\Base\Notification\Manager;
+use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationResource;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class NotificationController extends Controller
 {
@@ -28,30 +31,71 @@ class NotificationController extends Controller
      */
     public function store(Request $request) : JsonResponse
     {
-        $notification = $this->manager->create(CreateNotificationDto::validateAndCreate($request->all()));
+        try {
+            $notification = $this->manager->create(
+                CreateNotificationDto::validateAndCreate($request->all())
+            );
 
-        return (new NotificationResource($notification))->response()->setStatusCode(201);
+            return ApiResponse::success('Уведомление создано.', 201, [
+                'notification' => new NotificationResource($notification),
+            ]);
+        } catch (ValidationException $exception) {
+            return ApiResponse::error('Ошибка валидации.', 422, ['errors' => $exception->errors()]);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 
     /**
      * Статус уведомления.
      */
-    public function show(int $notification_id) : NotificationResource
+    public function show(int $notification_id) : JsonResponse
     {
-        $notification = $this->manager->find($notification_id);
+        try {
+            $notification = $this->manager->getNotification($notification_id);
 
-        abort_if($notification === null, 404);
+            return ApiResponse::success('Уведомление получено.', 200, [
+                'notification' => new NotificationResource($notification),
+            ]);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return new NotificationResource($notification);
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 
     /**
      * История уведомлений пользователя с фильтрами по статусу и каналу.
      */
-    public function index(Request $request) : AnonymousResourceCollection
+    public function index(Request $request) : JsonResponse
     {
-        $history = $this->manager->historyForUser(NotificationHistoryDto::validateAndCreate($request->query()));
+        try {
+            $history = $this->manager->historyForUser(
+                NotificationHistoryDto::validateAndCreate($request->query())
+            );
 
-        return NotificationResource::collection($history);
+            return ApiResponse::success('История уведомлений.', 200, [
+                'notifications' => NotificationResource::collection($history->items()),
+                'pagination' => [
+                    'current_page' => $history->currentPage(),
+                    'per_page' => $history->perPage(),
+                    'total' => $history->total(),
+                ],
+            ]);
+        } catch (ValidationException $exception) {
+            return ApiResponse::error('Ошибка валидации.', 422, ['errors' => $exception->errors()]);
+        } catch (OperationException $exception) {
+            return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ApiResponse::error('Внутренняя ошибка сервиса.', 500);
+        }
     }
 }

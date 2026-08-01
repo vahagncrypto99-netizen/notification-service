@@ -20,10 +20,10 @@ describe('создание уведомления', function () : void {
 
         $response = apiPost('/api/notifications', $payload);
 
-        $response->assertCreated()->assertJsonPath('data.status', 'processing')->assertJsonPath(
-            'data.user_id',
+        $response->assertCreated()->assertJsonPath('payload.notification.status', 'processing')->assertJsonPath(
+            'payload.notification.user_id',
             42
-        )->assertJsonPath('data.channel', 'email');
+        )->assertJsonPath('payload.notification.channel', 'email');
 
         $this->assertDatabaseHas('notifications', [
             'message' => 'Тестовое уведомление',
@@ -42,7 +42,7 @@ describe('создание уведомления', function () : void {
             'channel' => 'email',
         ];
 
-        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['message']);
+        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['message'], 'payload.errors');
 
         expect(Notification::query()->count())->toBe(0);
     });
@@ -54,7 +54,7 @@ describe('создание уведомления', function () : void {
             'channel' => 'sms',
         ];
 
-        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['channel']);
+        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['channel'], 'payload.errors');
     });
 
     it('отклоняет запрос без обязательных полей', function () : void {
@@ -62,7 +62,7 @@ describe('создание уведомления', function () : void {
             'message',
             'user_id',
             'channel',
-        ]);
+        ], 'payload.errors');
     });
 });
 
@@ -71,9 +71,9 @@ describe('статус уведомления', function () : void {
         $notification = Notification::factory()->sent()->create();
 
         apiGet("/api/notifications/{$notification->id}")->assertOk()->assertJsonPath(
-            'data.id',
+            'payload.notification.id',
             $notification->id
-        )->assertJsonPath('data.status', 'sent');
+        )->assertJsonPath('payload.notification.status', 'sent');
     });
 
     it('возвращает 404 для несуществующего уведомления', function () : void {
@@ -88,7 +88,7 @@ describe('история уведомлений', function () : void {
 
         apiGet('/api/notifications?user_id=1')->assertOk()->assertJsonCount(
             3,
-            'data'
+            'payload.notifications'
         );
     });
 
@@ -98,7 +98,7 @@ describe('история уведомлений', function () : void {
 
         $response = apiGet('/api/notifications?user_id=1&status=failed');
 
-        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.status', 'failed');
+        $response->assertOk()->assertJsonCount(1, 'payload.notifications')->assertJsonPath('payload.notifications.0.status', 'failed');
     });
 
     it('фильтрует по каналу', function () : void {
@@ -107,7 +107,7 @@ describe('история уведомлений', function () : void {
 
         $response = apiGet('/api/notifications?user_id=1&channel=telegram');
 
-        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.channel', 'telegram');
+        $response->assertOk()->assertJsonCount(1, 'payload.notifications')->assertJsonPath('payload.notifications.0.channel', 'telegram');
     });
 
     it('комбинирует фильтры по статусу и каналу', function () : void {
@@ -117,10 +117,10 @@ describe('история уведомлений', function () : void {
 
         $response = apiGet('/api/notifications?user_id=1&channel=email&status=sent');
 
-        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath(
-            'data.0.channel',
+        $response->assertOk()->assertJsonCount(1, 'payload.notifications')->assertJsonPath(
+            'payload.notifications.0.channel',
             'email'
-        )->assertJsonPath('data.0.status', 'sent');
+        )->assertJsonPath('payload.notifications.0.status', 'sent');
     });
 
     it('отклоняет невалидные значения фильтров', function () : void {
@@ -132,7 +132,7 @@ describe('история уведомлений', function () : void {
     it('требует user_id', function () : void {
         apiGet('/api/notifications')->assertUnprocessable()->assertJsonValidationErrors([
             'user_id',
-        ]);
+        ], 'payload.errors');
     });
 });
 

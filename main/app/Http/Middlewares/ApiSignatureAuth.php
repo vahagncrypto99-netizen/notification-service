@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middlewares;
 
 use App\Dto\RequestSignatureDto;
+use App\Http\Responses\ApiResponse;
 use App\Services\ApiSignatureValidator;
 use Closure;
 use Illuminate\Http\Request;
@@ -57,6 +58,6 @@ class ApiSignatureAuth
 
     private function unauthenticated() : Response
     {
-        return response()->json(['message' => 'Unauthenticated.'], 401);
+        return ApiResponse::error('Unauthenticated.', 401);
     }
 }
