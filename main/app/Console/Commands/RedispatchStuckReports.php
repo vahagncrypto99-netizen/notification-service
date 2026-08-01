@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Base\Notification\Jobs\GenerateReportJob;
 use App\Base\Notification\Repository\NotificationReportRepository;
 use App\Models\NotificationReport;
@@ -48,20 +47,25 @@ class RedispatchStuckReports extends Command
                 $batch_limit
             );
 
+            $ids = $stuck->pluck('id')->all();
+
+            /**
+             * Зависшие processing возвращаются в pending одним условным
+             * UPDATE — guard джобы генерации стартует только из pending.
+             * Порог watchdog-а больше таймаута джобы, живой генерации
+             * в этот момент нет; успевший завершиться отчёт условие
+             * UPDATE не заденет, а его джоба идемпотентно пропустится.
+             */
+            $repository->resetToPendingAll($ids);
+
+            /**
+             * Массовый сдвиг updated_at одним UPDATE — повторный
+             * передиспатч возможен не раньше следующего порога.
+             */
+            $repository->touchAll($ids);
+
             /** @var NotificationReport $report */
             foreach ($stuck as $report) {
-                /**
-                 * Зависший processing возвращается в pending — guard джобы
-                 * генерации стартует только из pending. Порог watchdog-а
-                 * больше таймаута джобы, живой генерации в этот момент нет.
-                 */
-                if ($report->status === ReportStatusEnum::Processing
-                    && ! $repository->resetToPending($report->id)) {
-                    continue;
-                }
-
-                $report->touch();
-
                 GenerateReportJob::dispatch($report->id);
 
                 Log::warning("Отчёт #{$report->id} завис в генерации, джоба передиспатчена.");

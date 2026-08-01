@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -100,6 +101,20 @@ abstract class Base
     public function count() : int
     {
         return $this->query()->count();
+    }
+
+    /**
+     * Массовый сдвиг updated_at — один UPDATE на всю пачку.
+     *
+     * @param  array<int, int>  $ids
+     */
+    public function touchAll(array $ids) : void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        $this->query()->whereKey($ids)->update(['updated_at' => Carbon::now()]);
     }
 
     // ****************************************************************

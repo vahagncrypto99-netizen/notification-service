@@ -47,13 +47,14 @@ class RedispatchStuckNotifications extends Command
                 $batch_limit
             );
 
-            foreach ($stuck as $notification) {
-                /**
-                 * touch() сдвигает updated_at — повторный передиспатч того же
-                 * уведомления возможен не раньше следующего порога.
-                 */
-                $notification->touch();
+            /**
+             * Массовый сдвиг updated_at одним UPDATE (вместо touch()
+             * на каждую строку) — повторный передиспатч тех же
+             * уведомлений возможен не раньше следующего порога.
+             */
+            $repository->touchAll($stuck->pluck('id')->all());
 
+            foreach ($stuck as $notification) {
                 SendNotificationJob::dispatch($notification->id);
 
                 Log::warning(

@@ -88,14 +88,18 @@ class NotificationReportRepository extends Base
     }
 
     /**
-     * Возврат processing → pending для передиспатча зависшей генерации.
-     * Применяется только если отчёт всё ещё в processing.
+     * Возврат processing → pending для передиспатча зависших генераций
+     * одним условным UPDATE. Отчёты в других статусах не затрагиваются.
      *
-     * @return bool сработал ли переход
+     * @param  array<int, int>  $ids
      */
-    public function resetToPending(int $report_id) : bool
+    public function resetToPendingAll(array $ids) : void
     {
-        return (bool) $this->query()->whereKey($report_id)->where(
+        if ($ids === []) {
+            return;
+        }
+
+        $this->query()->whereKey($ids)->where(
             'status',
             ReportStatusEnum::Processing
         )->update(['status' => ReportStatusEnum::Pending]);
