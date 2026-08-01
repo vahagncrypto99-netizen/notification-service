@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Base\Notification\Exceptions;
+
+use RuntimeException;
+
+class ReportFormatterNotConfiguredException extends RuntimeException
+{
+    /**
+     * ReportFormatterNotConfiguredException constructor.
+     */
+    public function __construct(string $format)
+    {
+        parent::__construct(
+            "Для формата отчёта '{$format}' не зарегистрирован форматтер."
+        );
+    }
+}
