@@ -27,6 +27,22 @@ make setup
 - Логи — `make logs`; RabbitMQ UI — `http://localhost:15672` (креды в корневом `.env`)
 
 
+## Эндпоинты
+
+Полное описание с примерами — в Swagger UI; здесь обзор:
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| `POST` | `/api/notifications` | Создать уведомление (`message` ≤ 500, `user_id`, `channel`: `email`/`telegram`) — создаётся в `processing`, доставка ставится в очередь |
+| `GET` | `/api/notifications/{id}` | Статус уведомления (`processing` / `sent` / `failed`) |
+| `GET` | `/api/notifications?user_id=…` | История пользователя с пагинацией; фильтры `status`, `channel` |
+| `POST` | `/api/reports` | Запросить отчёт за период (`user_id`, `period_from`, `period_to`) — генерация асинхронная |
+| `GET` | `/api/reports/{id}` | Статус готовности отчёта |
+| `GET` | `/api/reports/{id}/download` | Скачать CSV готового отчёта (до готовности — 409) |
+| `GET` | `/api/health` | Readiness: БД, брокер, кэш (без подписи и rate limit) |
+
+Все JSON-ответы — в едином контракте `{success, message, payload}`, включая ошибки валидации (422), аутентификации (401) и лимита (429).
+
 ## Как проверить API
 
 **Через Swagger UI** — `http://localhost/api/documentation` (главная страница редиректит туда же):
