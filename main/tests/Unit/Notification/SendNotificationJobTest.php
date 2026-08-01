@@ -35,7 +35,7 @@ it('успешная отправка переводит уведомление 
 });
 
 it('сбой отправки фиксирует ошибку и пробрасывает исключение для ретрая', function () : void {
-    config(['notification.simulate_failures' => true]);
+    config(['delivery.simulate_failures' => true]);
 
     $notification = Notification::factory()->create();
 
@@ -49,13 +49,13 @@ it('сбой отправки фиксирует ошибку и пробрас�
 });
 
 it('восстановление после сбоя: повторная попытка доводит до sent', function () : void {
-    config(['notification.simulate_failures' => true]);
+    config(['delivery.simulate_failures' => true]);
 
     $notification = Notification::factory()->create();
 
     expect(fn () => runSendJob($notification->id))->toThrow(RuntimeException::class);
 
-    config(['notification.simulate_failures' => false]);
+    config(['delivery.simulate_failures' => false]);
 
     runSendJob($notification->id);
 
@@ -149,5 +149,21 @@ describe('watchdog', function () : void {
         $this->artisan('notification:redispatch-stuck')->assertSuccessful();
 
         Queue::assertPushed(SendNotificationJob::class, 1);
+    });
+});
+
+describe('watchdog: дренаж', function () : void {
+    it('дренирует бэклог больше одной пачки за один запуск', function () : void {
+        Queue::fake();
+
+        config(['notification.watchdog.batch_limit' => 2]);
+
+        Notification::factory()->count(5)->create();
+
+        Notification::query()->update(['updated_at' => now()->subMinutes(30)]);
+
+        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+
+        Queue::assertPushed(SendNotificationJob::class, 5);
     });
 });

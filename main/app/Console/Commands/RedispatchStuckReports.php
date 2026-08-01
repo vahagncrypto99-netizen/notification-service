@@ -14,32 +14,32 @@ use Illuminate\Support\Facades\Log;
 class RedispatchStuckReports extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Сигнатура консольной команды.
      *
      * @var string
      */
     protected $signature = 'notification:redispatch-stuck-reports';
 
     /**
-     * The console command description.
+     * Описание консольной команды.
      *
      * @var string
      */
     protected $description = 'Передиспатч отчётов, зависших в статусах pending и processing';
 
     /**
-     * Execute the console command.
+     * Выполнение команды.
      */
     public function handle(NotificationReportRepository $repository) : int
     {
-        $threshold_minutes = (int) config('notification.watchdog.stuck_threshold_minutes');
+        $threshold_minutes = (int) config('notification.watchdog.report_stuck_threshold_minutes');
         $batch_limit = (int) config('notification.watchdog.batch_limit');
 
         $total = 0;
 
         /**
-         * Дренаж циклом до опустошения: touch() сдвигает updated_at,
-         * поэтому каждая следующая выборка отдаёт только необработанное.
+         * Дренаж циклом до опустошения: сдвиг updated_at выводит
+         * обработанное из каждой следующей выборки.
          */
         do {
             $stuck = $repository->getStuck(
@@ -50,17 +50,16 @@ class RedispatchStuckReports extends Command
             $ids = $stuck->pluck('id')->all();
 
             /**
-             * Зависшие processing возвращаются в pending одним условным
-             * UPDATE — guard джобы генерации стартует только из pending.
-             * Порог watchdog-а больше таймаута джобы, живой генерации
-             * в этот момент нет; успевший завершиться отчёт условие
-             * UPDATE не заденет, а его джоба идемпотентно пропустится.
+             * Зависшие processing возвращаются в pending — генерация
+             * стартует только из pending. Порог больше зазора между
+             * bump-ами updated_at живой джобы (таймаут + backoff),
+             * поэтому работающую генерацию watchdog не трогает.
              */
             $repository->resetToPendingAll($ids);
 
             /**
-             * Массовый сдвиг updated_at одним UPDATE — повторный
-             * передиспатч возможен не раньше следующего порога.
+             * Сдвиг updated_at: повторный передиспатч возможен
+             * не раньше следующего порога.
              */
             $repository->touchAll($ids);
 

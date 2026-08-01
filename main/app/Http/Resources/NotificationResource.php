@@ -45,7 +45,7 @@ use OpenApi\Attributes as OA;
 class NotificationResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Преобразование ресурса в массив ответа.
      *
      * @return array<string, mixed>
      */

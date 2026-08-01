@@ -53,9 +53,8 @@ class SendNotificationJob extends Queue
     }
 
     /**
-     * Доставка уведомления: статус sent ставится только по фактическому
-     * исходу отправки каналом. Транзиентный сбой уходит в ретрай,
-     * неисправимый отказ гасит джобу сразу, минуя ретраи.
+     * Доставка уведомления. Транзиентный сбой уходит в ретрай,
+     * неисправимый отказ гасит уведомление сразу.
      *
      * @throws Throwable
      */
@@ -76,7 +75,7 @@ class SendNotificationJob extends Queue
          * Guard идемпотентности: уведомление уже в терминальном статусе —
          * повторная отправка невозможна (гонка watchdog против живой джобы).
          */
-        if ($notification->status !== NotificationStatusEnum::Processing) {
+        if (! $notification->inStatus(NotificationStatusEnum::Processing)) {
             Log::info(
                 "Уведомление #{$notification->id} уже в статусе {$notification->status->value}, отправка пропущена."
             );
@@ -100,7 +99,10 @@ class SendNotificationJob extends Queue
              * ретраи бессмысленны, уведомление гасится сразу.
              */
             if ($repository->markAsFailed($notification->id, $exception->getMessage())) {
-                NotificationFailed::dispatch($notification->refresh());
+                $notification->setStatus(NotificationStatusEnum::Failed);
+                $notification->last_error = $exception->getMessage();
+
+                NotificationFailed::dispatch($notification);
             }
 
             Log::error(
@@ -110,15 +112,15 @@ class SendNotificationJob extends Queue
 
             return;
         } catch (Throwable $exception) {
-            $notification->last_error = $exception->getMessage();
-
-            $notification->save();
+            $repository->rememberLastError($notification->id, $exception->getMessage());
 
             throw $exception;
         }
 
         if ($repository->markAsSent($notification->id)) {
-            NotificationSent::dispatch($notification->refresh());
+            $notification->setStatus(NotificationStatusEnum::Sent);
+
+            NotificationSent::dispatch($notification);
         }
     }
 
@@ -138,7 +140,10 @@ class SendNotificationJob extends Queue
         }
 
         if ($repository->markAsFailed($notification->id, $exception?->getMessage())) {
-            NotificationFailed::dispatch($notification->refresh());
+            $notification->setStatus(NotificationStatusEnum::Failed);
+            $notification->last_error = $exception?->getMessage();
+
+            NotificationFailed::dispatch($notification);
         }
 
         Log::error(

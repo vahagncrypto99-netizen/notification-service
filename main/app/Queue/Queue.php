@@ -18,16 +18,17 @@ abstract class Queue implements ShouldQueue
     }
 
     /**
-     * The number of times the job may be attempted.
+     * Количество попыток выполнения джобы.
      *
      * @var int
      */
     public $tries = 1;
 
     /**
-     * Set the desired queue for the job.
+     * Назначение очереди с проверкой имени: неизвестное имя
+     * откатывается на низкоприоритетную очередь.
      *
-     * @param  string|null  $queue
+     * @param  string  $queue
      * @return $this
      */
     public function onQueue($queue)

@@ -25,9 +25,9 @@ class TelegramClient implements MessengerSenderInterface
     protected const LIMIT_REQUEST_TO_API_PER_SECOND = 30;
 
     /**
-     * Интервал ожидания при превышении лимита, секунды.
+     * Интервал ожидания при превышении лимита, микросекунды.
      */
-    protected const RATE_LIMIT_SLEEP_SECONDS = 1;
+    protected const RATE_LIMIT_SLEEP_MICROSECONDS = 100_000;
 
     /**
      * Время жизни записи в лимитере, секунды.
@@ -47,7 +47,7 @@ class TelegramClient implements MessengerSenderInterface
         try {
             $this->enforceApiLimit();
 
-            if (config('notification.simulate_failures')) {
+            if (config('delivery.simulate_failures')) {
                 throw new RuntimeException('Симулированный сбой отправки в Telegram.');
             }
 
@@ -76,7 +76,7 @@ class TelegramClient implements MessengerSenderInterface
     protected function enforceApiLimit() : void
     {
         while (RateLimiter::tooManyAttempts(self::RATE_LIMITER_KEY, self::LIMIT_REQUEST_TO_API_PER_SECOND)) {
-            sleep(self::RATE_LIMIT_SLEEP_SECONDS);
+            usleep(self::RATE_LIMIT_SLEEP_MICROSECONDS);
         }
 
         RateLimiter::hit(self::RATE_LIMITER_KEY, self::RATE_LIMITER_DECAY_SECONDS);

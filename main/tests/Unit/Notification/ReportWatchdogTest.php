@@ -53,3 +53,32 @@ it('не трогает свежие и терминальные отчёты', 
 
     Queue::assertNothingPushed();
 });
+
+it('дренирует бэклог больше одной пачки за один запуск', function () : void {
+    Queue::fake();
+
+    config(['notification.watchdog.batch_limit' => 2]);
+
+    NotificationReport::factory()->count(5)->create();
+
+    NotificationReport::query()->update(['updated_at' => now()->subMinutes(30)]);
+
+    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+
+    Queue::assertPushed(GenerateReportJob::class, 5);
+});
+
+it('повторный запуск сразу после передиспатча ничего не пушит', function () : void {
+    Queue::fake();
+
+    $report = NotificationReport::factory()->create();
+
+    NotificationReport::query()->whereKey($report->id)->update([
+        'updated_at' => now()->subMinutes(30),
+    ]);
+
+    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+
+    Queue::assertPushed(GenerateReportJob::class, 1);
+});

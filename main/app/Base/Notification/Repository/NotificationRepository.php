@@ -48,7 +48,7 @@ class NotificationRepository extends Base
     }
 
     /**
-     * Уведомления, зависшие в обработке дольше порога.
+     * Уведомления, зависшие в обработке дольше порога (старые первыми).
      *
      * @return Collection<int, Notification>
      */
@@ -61,7 +61,7 @@ class NotificationRepository extends Base
             'updated_at',
             '<',
             $stuck_before
-        )->orderBy('id')->limit($limit)->get();
+        )->orderBy('updated_at')->limit($limit)->get(['id', 'attempts_count', 'updated_at']);
     }
 
     /**
@@ -76,6 +76,14 @@ class NotificationRepository extends Base
             'status',
             NotificationStatusEnum::Processing
         )->update(['status' => NotificationStatusEnum::Sent]);
+    }
+
+    /**
+     * Фиксация текста последней ошибки отправки.
+     */
+    public function rememberLastError(int $notification_id, string $error) : void
+    {
+        $this->query()->whereKey($notification_id)->update(['last_error' => $error]);
     }
 
     /**

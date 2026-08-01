@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\EventPublisher;
 
 use App\Dto\EventEnvelopeDto;
+use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
@@ -22,6 +23,7 @@ class RabbitMqEventPublisher implements EventPublisherInterface
     /**
      * RabbitMqEventPublisher constructor.
      *
+     * @param  Factory  $queue_factory  фабрика очередей (rabbitmq-соединение)
      * @param  string  $exchange  имя fanout-exchange для событий
      */
     public function __construct(
@@ -35,31 +37,24 @@ class RabbitMqEventPublisher implements EventPublisherInterface
      * Публикация конверта в durable fanout-exchange: каждый подписчик
      * (аналитика, аудит, ...) заводит свою очередь и биндит её к exchange —
      * издатель о подписчиках не знает.
+     *
+     * @throws RuntimeException если очереди не на rabbitmq-коннекшене
      */
     public function publish(EventEnvelopeDto $envelope) : void
     {
-        $channel = $this->channel();
-
-        $channel->exchange_declare(
-            $this->exchange,
-            AMQPExchangeType::FANOUT,
-            false,
-            true,
-            false
-        );
-
         $message = new AMQPMessage($envelope->toJson(), [
             'content_type' => 'application/json',
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ]);
 
-        $channel->basic_publish($message, $this->exchange);
+        $this->channel()->basic_publish($message, $this->exchange);
     }
 
     /**
      * Отдельный AMQP-канал публикации поверх общего соединения:
      * channel-level ошибка AMQP закрывает канал целиком, и публикация
-     * не должна ронять канал consumer-а воркера.
+     * не должна ронять канал consumer-а воркера. Exchange
+     * декларируется один раз на канал.
      */
     private function channel() : AMQPChannel
     {
@@ -75,6 +70,16 @@ class RabbitMqEventPublisher implements EventPublisherInterface
             );
         }
 
-        return $this->publish_channel = $queue->getConnection()->channel();
+        $channel = $queue->getConnection()->channel();
+
+        $channel->exchange_declare(
+            $this->exchange,
+            AMQPExchangeType::FANOUT,
+            false,
+            true,
+            false
+        );
+
+        return $this->publish_channel = $channel;
     }
 }

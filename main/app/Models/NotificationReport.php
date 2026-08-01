@@ -26,12 +26,38 @@ class NotificationReport extends Model
     /** @use HasFactory<NotificationReportFactory> */
     use HasFactory;
 
+    /**
+     * Таблица модели.
+     *
+     * @var string
+     */
     protected $table = 'notification_reports';
 
+    /**
+     * Приведение типов атрибутов.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'user_id' => 'integer',
         'period_from' => 'date',
         'period_to' => 'date',
         'status' => ReportStatusEnum::class,
     ];
+
+    /**
+     * Находится ли отчёт в указанном статусе.
+     */
+    public function inStatus(ReportStatusEnum $status) : bool
+    {
+        return $this->status === $status;
+    }
+
+    /**
+     * Установить статус отчёта (без сохранения).
+     */
+    public function setStatus(ReportStatusEnum $status) : void
+    {
+        $this->status = $status;
+    }
 }

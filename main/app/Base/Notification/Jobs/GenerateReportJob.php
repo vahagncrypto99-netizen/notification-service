@@ -53,7 +53,6 @@ class GenerateReportJob extends Queue
      * Генерация отчёта. Статус done ставится только после атомарного
      * переноса файла на постоянный путь.
      *
-     *
      * @throws Throwable
      */
     public function handle(
@@ -79,12 +78,20 @@ class GenerateReportJob extends Queue
         $started = $report_repository->markAsProcessing($report->id);
 
         $retrying = $this->attempts() > 1
-            && $report->refresh()->status === ReportStatusEnum::Processing;
+            && $report->refresh()->inStatus(ReportStatusEnum::Processing);
 
         if (! $started && ! $retrying) {
             Log::info("Отчёт #{$report->id} уже в статусе {$report->refresh()->status->value}, генерация пропущена.");
 
             return;
+        }
+
+        /**
+         * Ретрай сбрасывает часы зависания: каждая живая попытка двигает
+         * updated_at, и watchdog не передиспатчит работающую генерацию.
+         */
+        if ($retrying) {
+            $report->touch();
         }
 
         $rows = $notification_repository->aggregateByChannel(

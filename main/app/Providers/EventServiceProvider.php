@@ -9,7 +9,7 @@ use App\Base\Notification\Listeners\NotificationEventSubscriber;
 class EventServiceProvider extends \Illuminate\Foundation\Support\Providers\EventServiceProvider
 {
     /**
-     * The event listener mappings for the application.
+     * Карта «событие → слушатели».
      *
      * @var array<class-string, array<int, class-string>>
      */
@@ -18,7 +18,7 @@ class EventServiceProvider extends \Illuminate\Foundation\Support\Providers\Even
     ];
 
     /**
-     * The subscriber classes to register.
+     * Регистрируемые подписчики событий.
      *
      * @var array<int, class-string>
      */

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Применение миграции.
      */
     public function up() : void
     {
@@ -29,6 +29,11 @@ return new class extends Migration
 
             $table->index(['user_id', 'status', 'channel']);
             $table->index(['status', 'updated_at']);
+
+            /**
+             * Под историю пользователя (ORDER BY id DESC внутри user_id).
+             */
+            $table->index(['user_id', 'id']);
         });
 
         /**
@@ -43,7 +48,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Откат миграции.
      */
     public function down() : void
     {

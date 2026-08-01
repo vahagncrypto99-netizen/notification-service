@@ -7,7 +7,6 @@ namespace App\Repository;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * @template TModel of \Illuminate\Database\Eloquent\Model
@@ -58,30 +57,6 @@ abstract class Base
 
     /**
      * Получить запись по первичному ключу.
-     * Если ничего не будет найдено, то будет выброшено исключение.
-     *
-     * @param  array<int, string>  $columns
-     * @return TModel
-     *
-     * @throws ModelNotFoundException
-     */
-    public function get(mixed $id, array $columns = ['*']) : Model
-    {
-        if (empty($columns)) {
-            $columns = ['*'];
-        }
-
-        try {
-            return $this->query()->findOrFail($id, $columns);
-        } catch (ModelNotFoundException) {
-            throw new ModelNotFoundException(
-                $this->getRepositoryName()." - id $id not found"
-            );
-        }
-    }
-
-    /**
-     * Получить запись по первичному ключу.
      *
      * @param  array<int, string>  $columns
      * @return TModel|null
@@ -96,14 +71,6 @@ abstract class Base
     }
 
     /**
-     * Получить количество записей в таблице.
-     */
-    public function count() : int
-    {
-        return $this->query()->count();
-    }
-
-    /**
      * Массовый сдвиг updated_at — один UPDATE на всю пачку.
      *
      * @param  array<int, int>  $ids
@@ -115,17 +82,5 @@ abstract class Base
         }
 
         $this->query()->whereKey($ids)->update(['updated_at' => Carbon::now()]);
-    }
-
-    // ****************************************************************
-    // ************************** Support *****************************
-    // ****************************************************************
-
-    /**
-     * Получить название репозитория.
-     */
-    protected function getRepositoryName() : string
-    {
-        return class_basename(get_class($this));
     }
 }

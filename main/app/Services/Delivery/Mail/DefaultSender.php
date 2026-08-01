@@ -25,7 +25,7 @@ class DefaultSender extends Sender
      */
     protected function sendProcess(SenderDto $data) : void
     {
-        if (config('notification.simulate_failures')) {
+        if (config('delivery.simulate_failures')) {
             throw new RuntimeException('Симулированный сбой отправки email.');
         }
 

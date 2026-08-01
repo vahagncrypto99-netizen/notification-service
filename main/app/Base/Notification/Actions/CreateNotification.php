@@ -29,7 +29,7 @@ class CreateNotification
         $notification = $this->repository->new();
 
         $notification->message = $dto->message;
-        $notification->status = NotificationStatusEnum::Processing;
+        $notification->setStatus(NotificationStatusEnum::Processing);
         $notification->user_id = $dto->user_id;
         $notification->channel = $dto->channel;
 

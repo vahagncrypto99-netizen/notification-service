@@ -28,8 +28,18 @@ class Notification extends Model
     /** @use HasFactory<NotificationFactory> */
     use HasFactory;
 
+    /**
+     * Таблица модели.
+     *
+     * @var string
+     */
     protected $table = 'notifications';
 
+    /**
+     * Приведение типов атрибутов.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'status' => NotificationStatusEnum::class,
         'channel' => ChannelEnum::class,
@@ -39,11 +49,26 @@ class Notification extends Model
     ];
 
     /**
-     * Зафиксировать попытку отправки. Атомарный инкремент — параллельные
-     * джобы не теряют счётчик на read-modify-write.
+     * Зафиксировать попытку отправки (атомарный инкремент).
      */
     public function registerAttempt() : void
     {
         $this->increment('attempts_count', 1, ['last_attempted_at' => Carbon::now()]);
+    }
+
+    /**
+     * Находится ли уведомление в указанном статусе.
+     */
+    public function inStatus(NotificationStatusEnum $status) : bool
+    {
+        return $this->status === $status;
+    }
+
+    /**
+     * Установить статус уведомления (без сохранения).
+     */
+    public function setStatus(NotificationStatusEnum $status) : void
+    {
+        $this->status = $status;
     }
 }

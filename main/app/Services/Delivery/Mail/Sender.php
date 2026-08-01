@@ -14,6 +14,8 @@ abstract class Sender implements MailSenderInterface
      *
      * Ошибки не подавляются: вызывающая джоба сама решает —
      * ретрай или терминальный отказ.
+     *
+     * @throws PermanentDeliveryException при невалидном адресе получателя
      */
     public function send(SenderDto $data) : void
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Dto\RequestSignatureDto;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 class ApiSignatureValidator
@@ -20,6 +21,7 @@ class ApiSignatureValidator
      * @param  array<string, string>  $clients  карта «токен → секрет подписи»
      * @param  int  $signature_ttl  окно валидности timestamp, секунды
      * @param  string  $signature_algo  алгоритм HMAC
+     * @param  Repository  $nonce_cache  хранилище одноразовых nonce
      */
     public function __construct(
         private readonly array $clients,

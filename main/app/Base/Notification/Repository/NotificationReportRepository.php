@@ -82,9 +82,9 @@ class NotificationReportRepository extends Base
         return $this->query()
             ->whereIn('status', [ReportStatusEnum::Pending, ReportStatusEnum::Processing])
             ->where('updated_at', '<', $threshold)
-            ->orderBy('id')
+            ->orderBy('updated_at')
             ->limit($limit)
-            ->get();
+            ->get(['id', 'updated_at']);
     }
 
     /**

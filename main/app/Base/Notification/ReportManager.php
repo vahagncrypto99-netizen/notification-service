@@ -82,7 +82,7 @@ class ReportManager
         try {
             $report = $this->getReport($report_id);
 
-            if ($report->status !== ReportStatusEnum::Done || $report->file_path === null) {
+            if (! $report->inStatus(ReportStatusEnum::Done) || $report->file_path === null) {
                 throw new OperationException('Отчёт ещё не готов к скачиванию.', 409);
             }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Base\Notification\Services;
 
 use App\Base\Notification\Dto\ReportFileDto;
+use App\Base\Notification\Exceptions\ReportFormatterNotConfiguredException;
 use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Exceptions\OperationException;
 use App\Models\NotificationReport;
@@ -17,7 +18,8 @@ class ReportFileStorage
      */
     public function __construct(
         private readonly ReportFormatterResolver $formatter_resolver,
-        private readonly FilesystemAdapter $disk
+        private readonly FilesystemAdapter $disk,
+        private readonly string $directory,
     ) {
         //
     }
@@ -28,6 +30,8 @@ class ReportFileStorage
      *
      * @param  array<int, array{channel: string, total: int, failed: int}>  $rows
      * @return string постоянный путь файла
+     *
+     * @throws ReportFormatterNotConfiguredException
      */
     public function write(int $report_id, array $rows) : string
     {
@@ -46,8 +50,6 @@ class ReportFileStorage
 
     /**
      * Файл готового отчёта для скачивания: абсолютный путь и имя.
-     * HTTP-ответ из них собирает контроллер — транспорт остаётся
-     * за пределами доменного сервиса.
      *
      * @throws OperationException если файл отсутствует на диске
      */
@@ -67,6 +69,8 @@ class ReportFileStorage
 
     /**
      * Убрать недописанный временный файл упавшей генерации.
+     *
+     * @throws ReportFormatterNotConfiguredException
      */
     public function deleteTemp(int $report_id) : void
     {
@@ -80,9 +84,7 @@ class ReportFileStorage
      */
     private function tmpPath(int $report_id, string $extension) : string
     {
-        $directory = config('notification.reports.directory');
-
-        return "{$directory}/tmp/report_{$report_id}.{$extension}.tmp";
+        return "{$this->directory}/tmp/report_{$report_id}.{$extension}.tmp";
     }
 
     /**
@@ -90,8 +92,6 @@ class ReportFileStorage
      */
     private function finalPath(int $report_id, string $extension) : string
     {
-        $directory = config('notification.reports.directory');
-
-        return "{$directory}/report_{$report_id}.{$extension}";
+        return "{$this->directory}/report_{$report_id}.{$extension}";
     }
 }

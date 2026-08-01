@@ -14,6 +14,7 @@ class OperationException extends Exception
      *
      * @param  string  $message  человекочитаемое сообщение для ответа API
      * @param  int  $status_code  HTTP-статус ответа
+     * @param  Throwable|null  $previous  исходное исключение
      */
     public function __construct(
         string $message,

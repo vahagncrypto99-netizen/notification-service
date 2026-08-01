@@ -26,7 +26,8 @@ use RuntimeException;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Регистрация сервисов: composition root приложения — все карты
+     * «имя → класс» и конфигурация собираются здесь.
      */
     public function register() : void
     {
@@ -43,13 +44,14 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(SenderFactory::class, function (Application $app) {
-            return new SenderFactory($app, (array) config('delivery'));
+            return new SenderFactory($app, (array) config('delivery.mail'));
         });
 
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
             return new ReportFileStorage(
                 $app->make(ReportFormatterResolver::class),
-                Storage::disk((string) config('notification.reports.disk'))
+                Storage::disk((string) config('notification.reports.disk')),
+                (string) config('notification.reports.directory'),
             );
         });
 
@@ -60,7 +62,11 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->bind(EventPublisherInterface::class, function (Application $app) {
+        /**
+         * Строго singleton: подписчик резолвит publisher на каждое
+         * событие, и новый экземпляр плодил бы AMQP-каналы до channel_max.
+         */
+        $this->app->singleton(EventPublisherInterface::class, function (Application $app) {
             if (! config('notification.events.enabled')) {
                 return new NullEventPublisher;
             }
@@ -82,7 +88,9 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap any application services.
+     * Загрузка сервисов: fail-fast валидация конфигурации и rate limiter.
+     *
+     * @throws RuntimeException при некорректной конфигурации
      */
     public function boot() : void
     {
@@ -137,6 +145,8 @@ class AppServiceProvider extends ServiceProvider
      * Разбор пар «токен:секрет_подписи» из конфигурации.
      *
      * @return array<string, string>
+     *
+     * @throws RuntimeException при некорректной или пустой конфигурации
      */
     private function parseApiClients(string $raw) : array
     {
@@ -165,11 +175,21 @@ class AppServiceProvider extends ServiceProvider
             $clients[$token] = $secret;
         }
 
+        /**
+         * Пустая карта — все запросы молча получали бы 401;
+         * ошибка конфигурации должна быть видна на старте.
+         */
+        if ($clients === []) {
+            throw new RuntimeException('API_AUTH_CLIENTS пуст — не настроен ни один клиент API.');
+        }
+
         return $clients;
     }
 
     /**
      * Проверка, что настроенный HMAC-алгоритм поддерживается.
+     *
+     * @throws RuntimeException для неподдерживаемого алгоритма
      */
     private function validatedSignatureAlgo(string $algo) : string
     {

@@ -11,6 +11,9 @@ class QueueSettings
      */
     const HIGH_PRIORITY_QUEUE = 'high_priority_queue';
 
+    /**
+     * Таймаут джобы высокоприоритетной очереди, секунды.
+     */
     const HIGH_PRIORITY_TIMEOUT = 60;
 
     /**
@@ -18,5 +21,8 @@ class QueueSettings
      */
     const LOW_PRIORITY_QUEUE = 'low_priority_queue';
 
+    /**
+     * Таймаут джобы низкоприоритетной очереди, секунды.
+     */
     const LOW_PRIORITY_TIMEOUT = 60 * 10;
 }

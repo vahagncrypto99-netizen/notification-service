@@ -7,6 +7,7 @@ use App\Base\Notification\Channels\TelegramChannelSender;
 use App\Base\Notification\Dto\ChannelMessageDto;
 use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Enum\NotificationStatusEnum;
+use App\Base\Notification\Events\NotificationFailed;
 use App\Base\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
 use App\Services\Delivery\Mail\DefaultSender;
@@ -17,6 +18,7 @@ use App\Services\Delivery\Messenger\Dto\SenderDto as MessengerSenderDto;
 use App\Services\Delivery\Messenger\MessageFormatter;
 use App\Services\Delivery\Messenger\Telegram\TelegramClient;
 use App\Services\Delivery\PermanentDeliveryException;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
 function channelMessage(int $notification_id = 1, int $user_id = 7, string $message = 'Привет') : ChannelMessageDto
@@ -74,7 +76,7 @@ describe('telegram канал', function () : void {
     });
 
     it('транзиентный сбой клиента пробрасывается для ретрая джобы', function () : void {
-        config(['notification.simulate_failures' => true]);
+        config(['delivery.simulate_failures' => true]);
 
         app(TelegramChannelSender::class)->send(channelMessage());
     })->throws(RuntimeException::class);
@@ -94,6 +96,8 @@ describe('telegram канал', function () : void {
             ChannelEnum::Telegram
         )->create();
 
+        Event::fake([NotificationFailed::class]);
+
         app()->call([new SendNotificationJob($notification->id), 'handle']);
 
         $fresh = $notification->fresh();
@@ -101,6 +105,8 @@ describe('telegram канал', function () : void {
         expect($fresh->status)->toBe(NotificationStatusEnum::Failed)->and(
             $fresh->last_error
         )->toContain('недоступен');
+
+        Event::assertDispatched(NotificationFailed::class);
     });
 });
 
@@ -121,5 +127,11 @@ describe('форматтер сообщений', function () : void {
         expect(
             app(MessageFormatter::class)->prepareMessage("чистый\x00\x1Fтекст")
         )->toBe('чистыйтекст');
+    });
+
+    it('непарный суррогат не роняет доставку — возвращается исходный текст', function () : void {
+        expect(
+            app(MessageFormatter::class)->prepareMessage('Привет \uD83D')
+        )->toBe('Привет \uD83D');
     });
 });

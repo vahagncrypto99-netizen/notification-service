@@ -58,6 +58,9 @@ class ApiSignatureAuth
         return $next($request);
     }
 
+    /**
+     * Единый 401-ответ без деталей причины отказа.
+     */
     private function unauthenticated() : Response
     {
         return ApiResponse::error('Unauthenticated.', 401);

@@ -22,6 +22,8 @@ class EmailChannelSender implements ChannelSenderInterface
     /**
      * Отправка письма сендером из конфигурации. Email получателя
      * в реальной системе брался бы из профиля пользователя.
+     *
+     * @throws \Throwable при сбое отправки
      */
     public function send(ChannelMessageDto $message) : void
     {

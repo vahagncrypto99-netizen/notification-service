@@ -15,8 +15,14 @@ use Throwable;
 
 class NotificationEventSubscriber
 {
+    /**
+     * Тип события успешной доставки во внешнем конверте.
+     */
     private const EVENT_SENT = 'notification.sent';
 
+    /**
+     * Тип события сбоя доставки во внешнем конверте.
+     */
     private const EVENT_FAILED = 'notification.failed';
 
     /**
@@ -31,7 +37,6 @@ class NotificationEventSubscriber
 
     /**
      * Уведомление успешно отправлено.
-     *
      *
      * @throws Throwable
      */
@@ -50,7 +55,6 @@ class NotificationEventSubscriber
 
     /**
      * Доставка уведомления завершилась ошибкой (попытки исчерпаны).
-     *
      *
      * @throws Throwable
      */
@@ -72,7 +76,6 @@ class NotificationEventSubscriber
 
     /**
      * Публикация события наружу.
-     *
      *
      * @throws Throwable
      */

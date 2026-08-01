@@ -26,6 +26,9 @@ class TelegramChannelSender implements ChannelSenderInterface
     /**
      * Отправка через клиент Bot API с троттлингом под лимит Telegram.
      * Chat ID в реальной системе брался бы из привязки аккаунта.
+     *
+     * @throws PermanentDeliveryException при неисправимом отказе получателя
+     * @throws RuntimeException при транзиентном сбое (уходит в ретрай)
      */
     public function send(ChannelMessageDto $message) : void
     {
@@ -46,6 +49,13 @@ class TelegramChannelSender implements ChannelSenderInterface
             throw new PermanentDeliveryException("Получатель user-{$message->user_id} недоступен.");
         }
 
-        throw new RuntimeException((string) $response->message);
+        if ($response->should_retry) {
+            throw new RuntimeException((string) $response->message);
+        }
+
+        /**
+         * Ошибка без флага повтора — неисправимый отказ канала.
+         */
+        throw new PermanentDeliveryException((string) $response->message);
     }
 }

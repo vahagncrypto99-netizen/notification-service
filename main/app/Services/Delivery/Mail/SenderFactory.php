@@ -19,7 +19,7 @@ class SenderFactory
     /**
      * SenderFactory constructor.
      *
-     * @param  array<string, mixed>  $config  конфигурация подсистемы доставки
+     * @param  array<string, mixed>  $config  mail-конфигурация подсистемы доставки
      */
     public function __construct(
         protected Container $container,
@@ -31,10 +31,12 @@ class SenderFactory
     /**
      * Получение реализации сендера почты по имени
      * (без имени — дефолтный из конфига).
+     *
+     * @throws RuntimeException для ненастроенного сендера
      */
     public function mail(?string $sender = null) : MailSenderInterface
     {
-        $sender = $sender ?: (string) $this->config['mail']['default_sender'];
+        $sender = $sender ?: (string) $this->config['default_sender'];
 
         if (! empty($this->mail_senders[$sender])) {
             return $this->mail_senders[$sender];
@@ -50,7 +52,7 @@ class SenderFactory
      */
     protected function resolveMailSender(string $sender_name) : MailSenderInterface
     {
-        $handler = $this->config['mail']['senders'][$sender_name]['handler'] ?? null;
+        $handler = $this->config['senders'][$sender_name]['handler'] ?? null;
 
         if (empty($handler)) {
             throw new RuntimeException("Не найден сендер mail \"{$sender_name}\".");

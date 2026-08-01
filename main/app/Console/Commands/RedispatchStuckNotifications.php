@@ -13,21 +13,21 @@ use Illuminate\Support\Facades\Log;
 class RedispatchStuckNotifications extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Сигнатура консольной команды.
      *
      * @var string
      */
     protected $signature = 'notification:redispatch-stuck';
 
     /**
-     * The console command description.
+     * Описание консольной команды.
      *
      * @var string
      */
     protected $description = 'Передиспатч уведомлений, зависших в статусе processing';
 
     /**
-     * Execute the console command.
+     * Выполнение команды.
      */
     public function handle(NotificationRepository $repository) : int
     {
@@ -37,9 +37,8 @@ class RedispatchStuckNotifications extends Command
         $total = 0;
 
         /**
-         * Дренаж циклом до опустошения: touch() сдвигает updated_at,
-         * поэтому каждая следующая выборка отдаёт только необработанное,
-         * а бэклог после долгого простоя разгребается за один запуск.
+         * Дренаж циклом до опустошения: сдвиг updated_at выводит
+         * обработанное из каждой следующей выборки.
          */
         do {
             $stuck = $repository->getStuckInProcessing(
@@ -48,8 +47,7 @@ class RedispatchStuckNotifications extends Command
             );
 
             /**
-             * Массовый сдвиг updated_at одним UPDATE (вместо touch()
-             * на каждую строку) — повторный передиспатч тех же
+             * Сдвиг updated_at: повторный передиспатч тех же
              * уведомлений возможен не раньше следующего порога.
              */
             $repository->touchAll($stuck->pluck('id')->all());
