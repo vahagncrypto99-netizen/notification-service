@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
+ * @property int|null $notification_id
  * @property string|null $from_email
  * @property string|null $from_name
  * @property string $to_email
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, mixed>|null $additionally
  * @property string|null $sender
  * @property int $priority
+ * @property int $attempts
  * @property string|null $send_at
  */
 class NotificationMailQueue extends Model
@@ -25,5 +27,6 @@ class NotificationMailQueue extends Model
     protected $casts = [
         'additionally' => 'array',
         'priority' => 'integer',
+        'attempts' => 'integer',
     ];
 }

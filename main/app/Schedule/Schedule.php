@@ -24,6 +24,14 @@ class Schedule
             ->withoutOverlapping();
 
         /**
+         * Watchdog отчётов: передиспатч зависших pending (потерянный
+         * dispatch) и processing (убитый воркер).
+         */
+        $schedule->command('notification:redispatch-stuck-reports')
+            ->everyFiveMinutes()
+            ->withoutOverlapping();
+
+        /**
          * Отправка писем из очереди почтового канала.
          */
         $schedule->call(function () {

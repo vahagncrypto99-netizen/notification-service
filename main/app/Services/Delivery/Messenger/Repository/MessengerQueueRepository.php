@@ -6,6 +6,7 @@ namespace App\Services\Delivery\Messenger\Repository;
 
 use App\Models\NotificationMessengerQueue;
 use App\Repository\Base;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -31,11 +32,17 @@ class MessengerQueueRepository extends Base
     /**
      * Добавление сообщения в очередь мессенджера.
      */
-    public function addMail(string $messenger, string $messenger_id, string $message, ?string $send_at = null) : void
-    {
+    public function addMessage(
+        string $messenger,
+        string $messenger_id,
+        string $message,
+        ?string $send_at = null,
+        ?int $notification_id = null,
+    ) : void {
         /** @var NotificationMessengerQueue $record */
         $record = $this->new();
 
+        $record->notification_id = $notification_id;
         $record->messenger = $messenger;
         $record->messenger_id = $messenger_id;
         $record->message = $message;
@@ -45,13 +52,21 @@ class MessengerQueueRepository extends Base
     }
 
     /**
-     * Пачка сообщений мессенджера на отправку.
+     * Пачка сообщений мессенджера на отправку: отложенные —
+     * только с наступившим временем.
      *
      * @return Collection<int, NotificationMessengerQueue>
      */
     public function getNextSendingPart(string $messenger) : Collection
     {
-        return $this->query()->where('messenger', $messenger)->orderBy('id')->limit(self::SENDING_BATCH_SIZE)->get();
+        return $this->query()
+            ->where('messenger', $messenger)
+            ->where(function ($query) {
+                $query->whereNull('send_at')->orWhere('send_at', '<', Carbon::now());
+            })
+            ->orderBy('id')
+            ->limit(self::SENDING_BATCH_SIZE)
+            ->get();
     }
 
     /**
@@ -62,5 +77,21 @@ class MessengerQueueRepository extends Base
     public function deleteByIds(array $ids) : void
     {
         $this->query()->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * Есть ли в очереди сообщение по уведомлению.
+     */
+    public function existsForNotification(int $notification_id) : bool
+    {
+        return $this->query()->where('notification_id', $notification_id)->exists();
+    }
+
+    /**
+     * Фиксация неудачной попытки отправки.
+     */
+    public function registerAttempt(int $id) : void
+    {
+        $this->query()->whereKey($id)->increment('attempts');
     }
 }

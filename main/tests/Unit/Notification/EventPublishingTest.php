@@ -49,6 +49,8 @@ it('успешная доставка публикует конверт notifica
 
     app()->call([new SendNotificationJob($notification->id), 'handle']);
 
+    deliverChannels();
+
     expect($fake->published)->toHaveCount(1);
 
     $envelope = $fake->published[0];
@@ -83,6 +85,8 @@ it('текст уведомления не попадает в конверт', 
 
     app()->call([new SendNotificationJob($notification->id), 'handle']);
 
+    deliverChannels();
+
     expect(json_encode($fake->published[0]->data))->not->toContain('секретное содержимое');
 });
 
@@ -98,6 +102,8 @@ it('сбой публикации не ломает доставку', function 
     $notification = Notification::factory()->create();
 
     app()->call([new SendNotificationJob($notification->id), 'handle']);
+
+    deliverChannels();
 
     expect($notification->fresh()->status->value)->toBe('sent');
 });

@@ -8,7 +8,6 @@ use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Dto\ChannelMessageDto;
 use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Base\Notification\Events\NotificationFailed;
-use App\Base\Notification\Events\NotificationSent;
 use App\Base\Notification\Repository\NotificationRepository;
 use App\Models\Notification;
 use App\Queue\Queue;
@@ -52,8 +51,10 @@ class SendNotificationJob extends Queue
     }
 
     /**
-     * Выполнение отправки.
+     * Передача уведомления каналу доставки.
      *
+     * Уведомление остаётся в processing: статус sent/failed выставит
+     * контур канала после фактической отправки (DeliveryResultHandler).
      *
      * @throws Throwable
      */
@@ -75,7 +76,9 @@ class SendNotificationJob extends Queue
          * повторная отправка невозможна (гонка watchdog против живой джобы).
          */
         if ($notification->status !== NotificationStatusEnum::Processing) {
-            Log::info("Уведомление #{$notification->id} уже в статусе {$notification->status->value}, отправка пропущена.");
+            Log::info(
+                "Уведомление #{$notification->id} уже в статусе {$notification->status->value}, отправка пропущена."
+            );
 
             return;
         }
@@ -96,10 +99,6 @@ class SendNotificationJob extends Queue
             $notification->save();
 
             throw $exception;
-        }
-
-        if ($repository->markAsSent($notification->id)) {
-            NotificationSent::dispatch($notification->refresh());
         }
     }
 

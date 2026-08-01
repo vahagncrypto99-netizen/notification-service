@@ -39,6 +39,7 @@ class EmailChannelSender implements ChannelSenderInterface
             'subject' => "Уведомление #{$message->notification_id}",
             'message' => $message->message,
             'queue' => true,
+            'notification_id' => $message->notification_id,
         ]));
     }
 }

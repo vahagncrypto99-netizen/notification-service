@@ -24,6 +24,7 @@ class SenderDto extends Data
         public ?bool $queue = null,
         public ?int $priority = null,
         public ?string $send_at = null,
+        public ?int $notification_id = null,
     ) {
         $this->from_email = trim((string) $this->from_email);
         $this->to_email = trim($this->to_email);

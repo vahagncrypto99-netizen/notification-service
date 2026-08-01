@@ -6,7 +6,7 @@ namespace App\Base\Notification\Channels;
 
 use App\Base\Notification\Dto\ChannelMessageDto;
 use App\Services\Delivery\Messenger\Messenger;
-use App\Services\Delivery\Messenger\Repository\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\MessengerService;
 use RuntimeException;
 
 class TelegramChannelSender implements ChannelSenderInterface
@@ -15,7 +15,7 @@ class TelegramChannelSender implements ChannelSenderInterface
      * TelegramChannelSender constructor.
      */
     public function __construct(
-        private readonly MessengerQueueRepository $messenger_queue,
+        private readonly MessengerService $messenger_service,
     ) {
         //
     }
@@ -31,10 +31,11 @@ class TelegramChannelSender implements ChannelSenderInterface
             throw new RuntimeException('Симулированный сбой отправки в Telegram.');
         }
 
-        $this->messenger_queue->addMail(
+        $this->messenger_service->enqueue(
             Messenger::TELEGRAM,
             "user-{$message->user_id}",
-            $message->message
+            $message->message,
+            $message->notification_id,
         );
     }
 }

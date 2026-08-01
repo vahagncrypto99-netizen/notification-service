@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Base\Notification\Jobs;
 
+use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Base\Notification\Repository\NotificationReportRepository;
 use App\Base\Notification\Repository\NotificationRepository;
 use App\Base\Notification\Services\ReportFileStorage;
@@ -15,6 +16,13 @@ use Throwable;
 
 class GenerateReportJob extends Queue
 {
+    /**
+     * Количество попыток генерации.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
     /**
      * Таймаут выполнения.
      *
@@ -29,6 +37,16 @@ class GenerateReportJob extends Queue
         private readonly int $report_id
     ) {
         $this->onQueue(QueueSettings::LOW_PRIORITY_QUEUE);
+    }
+
+    /**
+     * Задержки между попытками (секунды).
+     *
+     * @return array<int, int>
+     */
+    public function backoff() : array
+    {
+        return [30, 120];
     }
 
     /**
@@ -53,12 +71,17 @@ class GenerateReportJob extends Queue
         }
 
         /**
-         * Guard: генерируем только из pending — повторная джоба
-         * по уже готовому или упавшему отчёту ничего не делает.
+         * Guard: генерация стартует из pending — повторная джоба по уже
+         * готовому или упавшему отчёту ничего не делает. Ретрай этой же
+         * джобы (attempts > 1) продолжает из processing, который сам
+         * и оставил на упавшей попытке.
          */
         $started = $report_repository->markAsProcessing($report->id);
 
-        if (! $started) {
+        $retrying = $this->attempts() > 1
+            && $report->refresh()->status === ReportStatusEnum::Processing;
+
+        if (! $started && ! $retrying) {
             Log::info("Отчёт #{$report->id} уже в статусе {$report->refresh()->status->value}, генерация пропущена.");
 
             return;

@@ -39,13 +39,11 @@ class Notification extends Model
     ];
 
     /**
-     * Зафиксировать попытку отправки.
+     * Зафиксировать попытку отправки. Атомарный инкремент — параллельные
+     * джобы не теряют счётчик на read-modify-write.
      */
     public function registerAttempt() : void
     {
-        $this->attempts_count = $this->attempts_count + 1;
-        $this->last_attempted_at = Carbon::now();
-
-        $this->save();
+        $this->increment('attempts_count', 1, ['last_attempted_at' => Carbon::now()]);
     }
 }

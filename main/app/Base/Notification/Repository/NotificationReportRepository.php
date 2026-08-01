@@ -7,6 +7,8 @@ namespace App\Base\Notification\Repository;
 use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Models\NotificationReport;
 use App\Repository\Base;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * @extends Base<NotificationReport>
@@ -67,5 +69,35 @@ class NotificationReportRepository extends Base
             'status' => ReportStatusEnum::Failed,
             'error' => $error,
         ]);
+    }
+
+    /**
+     * Отчёты, зависшие в генерации дольше порога: pending — потерянный
+     * dispatch, processing — убитый воркер.
+     *
+     * @return Collection<int, NotificationReport>
+     */
+    public function getStuck(Carbon $threshold, int $limit) : Collection
+    {
+        return $this->query()
+            ->whereIn('status', [ReportStatusEnum::Pending, ReportStatusEnum::Processing])
+            ->where('updated_at', '<', $threshold)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Возврат processing → pending для передиспатча зависшей генерации.
+     * Применяется только если отчёт всё ещё в processing.
+     *
+     * @return bool сработал ли переход
+     */
+    public function resetToPending(int $report_id) : bool
+    {
+        return (bool) $this->query()->whereKey($report_id)->where(
+            'status',
+            ReportStatusEnum::Processing
+        )->update(['status' => ReportStatusEnum::Pending]);
     }
 }

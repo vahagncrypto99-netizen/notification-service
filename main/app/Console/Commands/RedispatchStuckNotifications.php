@@ -34,33 +34,38 @@ class RedispatchStuckNotifications extends Command
         $threshold_minutes = (int) config('notification.watchdog.stuck_threshold_minutes');
         $batch_limit = (int) config('notification.watchdog.batch_limit');
 
-        $stuck = $repository->getStuckInProcessing(
-            Carbon::now()->subMinutes($threshold_minutes),
-            $batch_limit
-        );
+        $total = 0;
 
-        if ($stuck->isEmpty()) {
-            $this->info('Зависших уведомлений нет.');
-
-            return self::SUCCESS;
-        }
-
-        foreach ($stuck as $notification) {
-            /**
-             * touch() сдвигает updated_at — повторный передиспатч того же
-             * уведомления возможен не раньше следующего порога.
-             */
-            $notification->touch();
-
-            SendNotificationJob::dispatch($notification->id);
-
-            Log::warning(
-                "Уведомление #{$notification->id} зависло в processing, джоба передиспатчена.",
-                ['attempts' => $notification->attempts_count]
+        /**
+         * Дренаж циклом до опустошения: touch() сдвигает updated_at,
+         * поэтому каждая следующая выборка отдаёт только необработанное,
+         * а бэклог после долгого простоя разгребается за один запуск.
+         */
+        do {
+            $stuck = $repository->getStuckInProcessing(
+                Carbon::now()->subMinutes($threshold_minutes),
+                $batch_limit
             );
-        }
 
-        $this->info("Передиспатчено уведомлений: {$stuck->count()}.");
+            foreach ($stuck as $notification) {
+                /**
+                 * touch() сдвигает updated_at — повторный передиспатч того же
+                 * уведомления возможен не раньше следующего порога.
+                 */
+                $notification->touch();
+
+                SendNotificationJob::dispatch($notification->id);
+
+                Log::warning(
+                    "Уведомление #{$notification->id} зависло в processing, джоба передиспатчена.",
+                    ['attempts' => $notification->attempts_count]
+                );
+            }
+
+            $total += $stuck->count();
+        } while ($stuck->count() === $batch_limit);
+
+        $this->info($total > 0 ? "Передиспатчено уведомлений: {$total}." : 'Зависших уведомлений нет.');
 
         return self::SUCCESS;
     }

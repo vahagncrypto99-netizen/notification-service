@@ -51,4 +51,20 @@ class MailQueueRepository extends Base
     {
         $this->query()->whereIn('id', $ids)->delete();
     }
+
+    /**
+     * Есть ли в очереди письмо по уведомлению.
+     */
+    public function existsForNotification(int $notification_id) : bool
+    {
+        return $this->query()->where('notification_id', $notification_id)->exists();
+    }
+
+    /**
+     * Фиксация неудачной попытки отправки.
+     */
+    public function registerAttempt(int $id) : void
+    {
+        $this->query()->whereKey($id)->increment('attempts');
+    }
 }

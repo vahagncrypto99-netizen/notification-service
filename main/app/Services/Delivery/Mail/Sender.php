@@ -7,8 +7,7 @@ namespace App\Services\Delivery\Mail;
 use App\Models\NotificationMailQueue;
 use App\Services\Delivery\Mail\Dto\SenderDto;
 use App\Services\Delivery\Mail\Repository\MailQueueRepository;
-use Illuminate\Support\Facades\Log;
-use Throwable;
+use App\Services\Delivery\PermanentDeliveryException;
 
 abstract class Sender implements MailSenderInterface
 {
@@ -23,41 +22,33 @@ abstract class Sender implements MailSenderInterface
 
     /**
      * Отправка письма.
+     *
+     * Ошибки не подавляются: вызывающий контур (джоба или крон)
+     * сам решает — ретрай или терминальный отказ.
      */
     public function send(SenderDto $data) : void
     {
-        try {
-            /**
-             * Проверка адреса на валидность (в боевой реализации здесь же —
-             * отписка невалидных/временных/блэклист-адресов и метрики).
-             */
-            if (filter_var($data->to_email, FILTER_VALIDATE_EMAIL) === false) {
-                Log::warning("[{$this->getSenderName()}] Невалидный адрес получателя: {$data->to_email}, письмо пропущено.");
-
-                return;
-            }
-
-            /**
-             * Постановка в очередь канала, если есть такая настройка.
-             */
-            if ($data->queue) {
-                $this->addToQueue($data, $this->getSenderName());
-
-                return;
-            }
-
-            /**
-             * Прямая отправка письма.
-             */
-            $this->sendProcess($data);
-        } catch (Throwable $exception) {
-            report($exception);
-
-            Log::error(
-                "[{$this->getSenderName()}] Ошибка отправки почты. Адрес {$data->to_email}.",
-                ['error' => $exception->getMessage()]
-            );
+        /**
+         * Невалидный адрес — неисправимый отказ, ретраи бессмысленны
+         * (в боевой реализации здесь же — отписка/блэклист и метрики).
+         */
+        if (filter_var($data->to_email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new PermanentDeliveryException("Невалидный адрес получателя: {$data->to_email}.");
         }
+
+        /**
+         * Постановка в очередь канала, если есть такая настройка.
+         */
+        if ($data->queue) {
+            $this->addToQueue($data, $this->getSenderName());
+
+            return;
+        }
+
+        /**
+         * Прямая отправка письма.
+         */
+        $this->sendProcess($data);
     }
 
     /**
@@ -75,8 +66,20 @@ abstract class Sender implements MailSenderInterface
      */
     protected function addToQueue(SenderDto $data, ?string $sender = null) : void
     {
+        /**
+         * Идемпотентность повторной постановки: на одно уведомление —
+         * не больше одной записи в очереди (передиспатч watchdog-ом
+         * не приводит к дублю письма).
+         */
+        if ($data->notification_id !== null
+            && $this->mail_queue_repository->existsForNotification($data->notification_id)) {
+            return;
+        }
+
         /** @var NotificationMailQueue $record */
         $record = $this->mail_queue_repository->new();
+
+        $record->notification_id = $data->notification_id;
 
         $record->from_email = $data->from_email;
         $record->from_name = $data->from_name;

@@ -13,6 +13,7 @@ use App\Services\Delivery\Mail\Schedule as MailSchedule;
 use App\Services\Delivery\Mail\SenderFactory;
 use App\Services\Delivery\Messenger\MessageFormatter;
 use App\Services\Delivery\Messenger\MessengerResolver;
+use App\Services\Delivery\PermanentDeliveryException;
 
 function channelMessage(int $notification_id = 1, int $user_id = 7, string $message = 'Привет') : ChannelMessageDto
 {
@@ -63,8 +64,8 @@ describe('почтовый канал', function () : void {
         expect(NotificationMailQueue::query()->count())->toBe(1);
     });
 
-    it('невалидный адрес получателя пропускается без записи в очередь', function () : void {
-        app(SenderFactory::class)->mail()->send(
+    it('невалидный адрес получателя — неисправимый отказ без записи в очередь', function () : void {
+        expect(fn () => app(SenderFactory::class)->mail()->send(
             SenderDto::from([
                 'from_email' => null,
                 'from_name' => null,
@@ -73,7 +74,7 @@ describe('почтовый канал', function () : void {
                 'message' => 'y',
                 'queue' => true,
             ])
-        );
+        ))->toThrow(PermanentDeliveryException::class);
 
         expect(NotificationMailQueue::query()->count())->toBe(0);
     });

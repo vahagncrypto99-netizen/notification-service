@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Delivery\Mail;
 
+use Illuminate\Contracts\Container\Container;
 use RuntimeException;
 
 class SenderFactory
 {
-    /**
-     * Конфигурация подсистемы уведомлений.
-     *
-     * @var array<string, mixed>
-     */
-    protected array $config;
-
     /**
      * Кэш созданных mail-сендеров.
      *
@@ -24,10 +18,14 @@ class SenderFactory
 
     /**
      * SenderFactory constructor.
+     *
+     * @param  array<string, mixed>  $config  конфигурация подсистемы доставки
      */
-    public function __construct()
-    {
-        $this->config = (array) config('delivery');
+    public function __construct(
+        protected Container $container,
+        protected array $config,
+    ) {
+        //
     }
 
     /**
@@ -58,7 +56,7 @@ class SenderFactory
             throw new RuntimeException("Не найден сендер mail \"{$sender_name}\".");
         }
 
-        $sender = app($handler);
+        $sender = $this->container->make($handler);
 
         if (! $sender instanceof MailSenderInterface) {
             throw new RuntimeException(
