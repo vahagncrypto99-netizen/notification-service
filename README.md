@@ -71,6 +71,32 @@ curl -X POST http://localhost/api/notifications \
 
 Доставку видно в `make logs` (воркер → лог отправки канала), статус — `GET /api/notifications?user_id=1`.
 
+## Подписка на события (для других сервисов)
+
+Сервис публикует доменные события в durable fanout-exchange `notification.events` (имя — `NOTIFICATION_EVENTS_EXCHANGE`). Подписчик заводит **свою** durable-очередь и биндит её к exchange — каждый получает независимую копию каждого события, издатель о подписчиках не знает:
+
+```php
+$channel->exchange_declare('notification.events', 'fanout', false, true, false);
+$channel->queue_declare('analytics.notification-events', false, true, false, false);
+$channel->queue_bind('analytics.notification-events', 'notification.events');
+```
+
+Конверт события (версионированный, без PII):
+
+```json
+{
+  "uuid": "00aaff75-8a7e-4b4c-96c2-6cc23aa61565",
+  "type": "notification.sent",
+  "publisher": "Notification Service.production",
+  "version": 1,
+  "sent_at": "2026-08-01T20:50:31+00:00",
+  "data": {"notification_id": 4, "user_id": 99, "channel": "telegram", "status": "sent", "attempts": 1, "error": null}
+}
+```
+
+- Типы: `notification.sent`, `notification.failed` (у failed в `data.error` — причина). Очередь и binding подписчик декларирует идемпотентно при каждом старте: события, опубликованные до первой привязки, fanout отбрасывает.
+- Проверить шину руками: создать очередь и binding через management API (`http://localhost:15672`), дёрнуть `POST /api/notifications` — конверт появится в очереди.
+
 ## Архитектурные решения
 
 - `app/Base/Notification` — домен (статусы, ретраи, отчёты, события); `app/Services/Delivery` — доставка (именованные mail-сендеры с Reply-To-логикой, Telegram-клиент с троттлингом 30 msg/sec, форматтер сообщений). Связаны через `ChannelSenderInterface`: новый канал — класс + строчка в конфиге.
