@@ -29,9 +29,7 @@ class NotificationReportController extends Controller
      */
     public function store(Request $request) : JsonResponse
     {
-        $dto = RequestReportDto::validateAndCreate($request->all());
-
-        $report = $this->manager->requestReport($dto);
+        $report = $this->manager->requestReport(RequestReportDto::validateAndCreate($request->all()));
 
         return (new NotificationReportResource($report))->response()->setStatusCode(201);
     }

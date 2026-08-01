@@ -28,9 +28,7 @@ class NotificationController extends Controller
      */
     public function store(Request $request) : JsonResponse
     {
-        $dto = CreateNotificationDto::validateAndCreate($request->all());
-
-        $notification = $this->manager->create($dto);
+        $notification = $this->manager->create(CreateNotificationDto::validateAndCreate($request->all()));
 
         return (new NotificationResource($notification))->response()->setStatusCode(201);
     }
@@ -52,9 +50,7 @@ class NotificationController extends Controller
      */
     public function index(Request $request) : AnonymousResourceCollection
     {
-        $dto = NotificationHistoryDto::validateAndCreate($request->query());
-
-        $history = $this->manager->historyForUser($dto);
+        $history = $this->manager->historyForUser(NotificationHistoryDto::validateAndCreate($request->query()));
 
         return NotificationResource::collection($history);
     }

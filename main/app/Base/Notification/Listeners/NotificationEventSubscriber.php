@@ -6,11 +6,29 @@ namespace App\Base\Notification\Listeners;
 
 use App\Base\Notification\Events\NotificationFailed;
 use App\Base\Notification\Events\NotificationSent;
+use App\Models\Notification;
+use App\Services\EventPublisher\EventEnvelopeFactory;
+use App\Services\EventPublisher\EventPublisherInterface;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class NotificationEventSubscriber
 {
+    private const EVENT_SENT = 'notification.sent';
+
+    private const EVENT_FAILED = 'notification.failed';
+
+    /**
+     * NotificationEventSubscriber constructor.
+     */
+    public function __construct(
+        private readonly EventPublisherInterface $event_publisher,
+        private readonly EventEnvelopeFactory $envelope_factory,
+    ) {
+        //
+    }
+
     /**
      * Уведомление успешно отправлено.
      */
@@ -22,6 +40,8 @@ class NotificationEventSubscriber
             "Уведомление #{$notification->id} отправлено пользователю {$notification->user_id} через {$notification->channel->value}.",
             ['attempts' => $notification->attempts_count]
         );
+
+        $this->publishEvent(self::EVENT_SENT, $notification);
     }
 
     /**
@@ -38,6 +58,32 @@ class NotificationEventSubscriber
                 'error' => $notification->last_error,
             ]
         );
+
+        $this->publishEvent(self::EVENT_FAILED, $notification);
+    }
+
+    /**
+     * Публикация события наружу.
+     *
+     * Текст уведомления в конверт не попадает (нечего размазывать
+     * потенциально чувствительные данные по подписчикам). Сбой публикации
+     * не ломает доставку — уведомление уже в терминальном статусе;
+     * ошибка уходит в Sentry через report().
+     */
+    private function publishEvent(string $type, Notification $notification) : void
+    {
+        try {
+            $this->event_publisher->publish($this->envelope_factory->make($type, [
+                'notification_id' => $notification->id,
+                'user_id' => $notification->user_id,
+                'channel' => $notification->channel->value,
+                'status' => $notification->status->value,
+                'attempts' => $notification->attempts_count,
+                'error' => $notification->last_error,
+            ]));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**

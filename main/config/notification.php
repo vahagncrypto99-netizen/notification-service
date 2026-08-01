@@ -61,6 +61,23 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Публикация событий наружу
+    |--------------------------------------------------------------------------
+    |
+    | Доменные события (notification.sent / notification.failed) публикуются
+    | версионированным конвертом в durable fanout-exchange RabbitMQ —
+    | подписчики (аналитика, аудит) заводят свои очереди и биндятся к нему.
+    |
+    */
+
+    'events' => [
+        'enabled' => (bool) env('NOTIFICATION_EVENTS_ENABLED', true),
+        'exchange' => env('NOTIFICATION_EVENTS_EXCHANGE', 'notification.events'),
+        'version' => 1,
+    ],
+
     'reports' => [
         'disk' => env('NOTIFICATION_REPORTS_DISK', 'local'),
         'directory' => 'reports',

@@ -8,6 +8,10 @@ use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Base\Notification\Services\ReportFileStorage;
 use App\Services\ApiSignatureValidator;
+use App\Services\EventPublisher\EventEnvelopeFactory;
+use App\Services\EventPublisher\EventPublisherInterface;
+use App\Services\EventPublisher\NullEventPublisher;
+use App\Services\EventPublisher\RabbitMqEventPublisher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +31,24 @@ class AppServiceProvider extends ServiceProvider
             return new ReportFileStorage(
                 $app->make(ReportFormatterResolver::class),
                 Storage::disk((string) config('notification.reports.disk'))
+            );
+        });
+
+        $this->app->bind(EventEnvelopeFactory::class, function () {
+            return new EventEnvelopeFactory(
+                config('app.name').'.'.config('app.env'),
+                (int) config('notification.events.version'),
+            );
+        });
+
+        $this->app->bind(EventPublisherInterface::class, function (Application $app) {
+            if (! config('notification.events.enabled')) {
+                return new NullEventPublisher;
+            }
+
+            return new RabbitMqEventPublisher(
+                $app->make('queue'),
+                (string) config('notification.events.exchange'),
             );
         });
 
