@@ -7,12 +7,16 @@ namespace App\Providers;
 use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Base\Notification\Services\ReportFileStorage;
+use App\Http\Responses\ApiResponse;
 use App\Services\ApiSignatureValidator;
 use App\Services\EventPublisher\EventEnvelopeFactory;
 use App\Services\EventPublisher\EventPublisherInterface;
 use App\Services\EventPublisher\NullEventPublisher;
 use App\Services\EventPublisher\RabbitMqEventPublisher;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -72,6 +76,22 @@ class AppServiceProvider extends ServiceProvider
          * ошибкой, а не молчаливыми 401 на каждом запросе.
          */
         $this->app->make(ApiSignatureValidator::class);
+
+        /**
+         * Лимит запросов на сервис-клиент (bulkhead): взбесившийся
+         * клиент упирается в свой лимит, не задевая остальных.
+         * Ключ — токен клиента (хеш, чтобы не светить токен в кэше),
+         * до аутентификации — IP.
+         */
+        RateLimiter::for('api', function (Request $request) {
+            $token = $request->bearerToken();
+
+            $key = $token !== null ? hash('sha256', $token) : (string) $request->ip();
+
+            return Limit::perMinute((int) config('auth.api.rate_limit'))->by($key)->response(
+                fn () => ApiResponse::error('Слишком много запросов.', 429)
+            );
+        });
     }
 
     /**

@@ -67,6 +67,12 @@ return [
          * Алгоритм HMAC-подписи (любой из hash_hmac_algos()).
          */
         'signature_algo' => env('API_SIGNATURE_ALGO', 'sha256'),
+
+        /*
+         * Лимит запросов в минуту на один сервис-клиент (по токену;
+         * до аутентификации — по IP). Bulkhead от retry-шторма клиента.
+         */
+        'rate_limit' => (int) env('API_RATE_LIMIT_PER_MINUTE', 60),
     ],
 
 ];

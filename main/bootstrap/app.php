@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))->withRouting(
     EventServiceProvider::class,
 ])->withMiddleware(function (Middleware $middleware) {
     $middleware->api(append: [
+        'throttle:api',
         ApiSignatureAuth::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
