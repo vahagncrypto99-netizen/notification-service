@@ -1,8 +1,6 @@
 <?php
 
 use App\Services\Delivery\Mail\DefaultSender;
-use App\Services\Delivery\Messenger\MessageFormatter;
-use App\Services\Delivery\Messenger\Telegram\TelegramClient;
 
 return [
 
@@ -39,23 +37,6 @@ return [
             ],
         ],
 
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Мессенджеры
-    |--------------------------------------------------------------------------
-    |
-    | Карта «мессенджер → реализация»: sender (клиент API) и форматтер
-    | сообщений. Новый мессенджер добавляется строкой в карту.
-    |
-    */
-
-    'messengers' => [
-        'telegram' => [
-            'sender' => TelegramClient::class,
-            'message_formatter' => MessageFormatter::class,
-        ],
     ],
 
 ];

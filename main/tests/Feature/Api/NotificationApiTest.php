@@ -149,22 +149,14 @@ it('создание уведомления переживает полный ц
     $response->assertCreated();
 
     /**
-     * QUEUE_CONNECTION=sync: джоба выполнилась при dispatch — уведомление
-     * уже поставлено в очередь канала и ждёт крон-отправки.
+     * QUEUE_CONNECTION=sync: джоба доставки выполнилась при dispatch —
+     * уведомление уже отправлено каналом.
      */
     $notification = Notification::query()->firstOrFail();
 
-    expect($notification->status)->toBe(NotificationStatusEnum::Processing)->and(
+    expect($notification->status)->toBe(NotificationStatusEnum::Sent)->and(
         $notification->attempts_count
     )->toBe(1);
-
-    /**
-     * Крон-отправка канала замыкает контур: только фактическая
-     * отправка переводит уведомление в sent.
-     */
-    deliverChannels();
-
-    expect($notification->fresh()->status)->toBe(NotificationStatusEnum::Sent);
 });
 
 describe('контракты ответов', function () : void {

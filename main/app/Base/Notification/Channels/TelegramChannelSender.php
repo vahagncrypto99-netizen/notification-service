@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Base\Notification\Channels;
 
 use App\Base\Notification\Dto\ChannelMessageDto;
-use App\Services\Delivery\Messenger\Messenger;
-use App\Services\Delivery\Messenger\MessengerService;
+use App\Services\Delivery\Messenger\Dto\SenderDto;
+use App\Services\Delivery\Messenger\MessageFormatter;
+use App\Services\Delivery\Messenger\Telegram\TelegramClient;
+use App\Services\Delivery\PermanentDeliveryException;
 use RuntimeException;
 
 class TelegramChannelSender implements ChannelSenderInterface
@@ -15,27 +17,35 @@ class TelegramChannelSender implements ChannelSenderInterface
      * TelegramChannelSender constructor.
      */
     public function __construct(
-        private readonly MessengerService $messenger_service,
+        private readonly TelegramClient $client,
+        private readonly MessageFormatter $message_formatter,
     ) {
         //
     }
 
     /**
-     * Передача уведомления в очередь Telegram: отправку выполняет крон
-     * через клиент Bot API с троттлингом под лимит Telegram. Chat ID
-     * в реальной системе брался бы из привязки аккаунта пользователя.
+     * Отправка через клиент Bot API с троттлингом под лимит Telegram.
+     * Chat ID в реальной системе брался бы из привязки аккаунта.
      */
     public function send(ChannelMessageDto $message) : void
     {
-        if (config('notification.simulate_failures')) {
-            throw new RuntimeException('Симулированный сбой отправки в Telegram.');
+        $response = $this->client->send(SenderDto::from([
+            'chat_id' => "user-{$message->user_id}",
+            'message' => $this->message_formatter->prepareMessage($message->message),
+        ]));
+
+        if ($response->success) {
+            return;
         }
 
-        $this->messenger_service->enqueue(
-            Messenger::TELEGRAM,
-            "user-{$message->user_id}",
-            $message->message,
-            $message->notification_id,
-        );
+        if ($response->should_unsubscribe) {
+            /**
+             * Получатель заблокировал бота — ретраи бессмысленны
+             * (в боевой реализации здесь отписка пользователя).
+             */
+            throw new PermanentDeliveryException("Получатель user-{$message->user_id} недоступен.");
+        }
+
+        throw new RuntimeException((string) $response->message);
     }
 }

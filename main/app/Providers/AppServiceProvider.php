@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Base\Notification\Channels\ChannelSenderResolver;
-use App\Base\Notification\Channels\DeliveryResultHandler;
 use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Base\Notification\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
 use App\Services\ApiSignatureValidator;
-use App\Services\Delivery\DeliveryResultHandlerInterface;
 use App\Services\Delivery\Mail\SenderFactory;
-use App\Services\Delivery\Messenger\MessengerResolver;
 use App\Services\EventPublisher\EventEnvelopeFactory;
 use App\Services\EventPublisher\EventPublisherInterface;
 use App\Services\EventPublisher\NullEventPublisher;
@@ -48,12 +45,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SenderFactory::class, function (Application $app) {
             return new SenderFactory($app, (array) config('delivery'));
         });
-
-        $this->app->singleton(MessengerResolver::class, function (Application $app) {
-            return new MessengerResolver($app, (array) config('delivery.messengers'));
-        });
-
-        $this->app->bind(DeliveryResultHandlerInterface::class, DeliveryResultHandler::class);
 
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
             return new ReportFileStorage(

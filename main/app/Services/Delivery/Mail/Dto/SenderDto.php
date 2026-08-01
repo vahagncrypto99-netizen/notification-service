@@ -11,8 +11,6 @@ class SenderDto extends Data
 {
     /**
      * SenderDto constructor.
-     *
-     * @param  array<string, mixed>|null  $additionally
      */
     public function __construct(
         public ?string $from_email,
@@ -20,11 +18,7 @@ class SenderDto extends Data
         public string $to_email,
         public string $subject,
         public string $message,
-        public ?array $additionally = null,
-        public ?bool $queue = null,
         public ?int $priority = null,
-        public ?string $send_at = null,
-        public ?int $notification_id = null,
     ) {
         $this->from_email = trim((string) $this->from_email);
         $this->to_email = trim($this->to_email);
@@ -40,7 +34,6 @@ class SenderDto extends Data
             $this->from_name = (string) config('delivery.mail.from.default.name');
         }
 
-        $this->queue = $this->queue ?? true;
         $this->priority = $this->priority ?? 1;
     }
 

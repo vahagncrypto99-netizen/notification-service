@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Services\Delivery\Mail\Schedule;
-use App\Services\Delivery\Messenger\MessengerResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -47,22 +45,6 @@ function apiHeaders(
         'X-Nonce' => $nonce,
         'X-Signature' => hash_hmac((string) config('auth.api.signature_algo'), $canonical, $secret),
     ];
-}
-
-/**
- * Прогон крон-отправки каналов: доводит поставленные в канальные
- * очереди сообщения до фактической «отправки», замыкая контур
- * доставки (статусы sent/failed ставит именно этот контур).
- */
-function deliverChannels() : void
-{
-    app(Schedule::class)->send();
-
-    $resolver = app(MessengerResolver::class);
-
-    foreach ($resolver->available() as $messenger) {
-        $resolver->makeSchedule($messenger)->send();
-    }
 }
 
 /**

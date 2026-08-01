@@ -8,10 +8,12 @@ use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Dto\ChannelMessageDto;
 use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Base\Notification\Events\NotificationFailed;
+use App\Base\Notification\Events\NotificationSent;
 use App\Base\Notification\Repository\NotificationRepository;
 use App\Models\Notification;
 use App\Queue\Queue;
 use App\Queue\QueueSettings;
+use App\Services\Delivery\PermanentDeliveryException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -51,10 +53,9 @@ class SendNotificationJob extends Queue
     }
 
     /**
-     * Передача уведомления каналу доставки.
-     *
-     * Уведомление остаётся в processing: статус sent/failed выставит
-     * контур канала после фактической отправки (DeliveryResultHandler).
+     * Доставка уведомления: статус sent ставится только по фактическому
+     * исходу отправки каналом. Транзиентный сбой уходит в ретрай,
+     * неисправимый отказ гасит джобу сразу, минуя ретраи.
      *
      * @throws Throwable
      */
@@ -93,12 +94,31 @@ class SendNotificationJob extends Queue
 
         try {
             $resolver->resolve($notification->channel)->send($message);
+        } catch (PermanentDeliveryException $exception) {
+            /**
+             * Неисправимый отказ (невалидный адрес, блокировка бота):
+             * ретраи бессмысленны, уведомление гасится сразу.
+             */
+            if ($repository->markAsFailed($notification->id, $exception->getMessage())) {
+                NotificationFailed::dispatch($notification->refresh());
+            }
+
+            Log::error(
+                "Уведомление #{$notification->id} не может быть доставлено.",
+                ['error' => $exception->getMessage()]
+            );
+
+            return;
         } catch (Throwable $exception) {
             $notification->last_error = $exception->getMessage();
 
             $notification->save();
 
             throw $exception;
+        }
+
+        if ($repository->markAsSent($notification->id)) {
+            NotificationSent::dispatch($notification->refresh());
         }
     }
 

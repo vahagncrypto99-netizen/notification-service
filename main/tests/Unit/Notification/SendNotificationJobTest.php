@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Base\Notification\Events\NotificationFailed;
 use App\Base\Notification\Events\NotificationSent;
 use App\Base\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
-use App\Models\NotificationMailQueue;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
@@ -20,20 +18,12 @@ function runSendJob(int $notification_id) : void
     app()->call([new SendNotificationJob($notification_id), 'handle']);
 }
 
-it('джоба ставит уведомление в канал, крон-отправка доводит до sent', function () : void {
+it('успешная отправка переводит уведомление в sent и диспатчит событие', function () : void {
     Event::fake([NotificationSent::class]);
 
-    $notification = Notification::factory()->channel(ChannelEnum::Email)->create();
+    $notification = Notification::factory()->create();
 
     runSendJob($notification->id);
-
-    /**
-     * Джоба только поставила письмо в очередь канала — статус sent
-     * появится после фактической отправки кроном.
-     */
-    expect($notification->fresh()->status)->toBe(NotificationStatusEnum::Processing);
-
-    deliverChannels();
 
     $fresh = $notification->fresh();
 
@@ -61,7 +51,7 @@ it('сбой отправки фиксирует ошибку и пробрас�
 it('восстановление после сбоя: повторная попытка доводит до sent', function () : void {
     config(['notification.simulate_failures' => true]);
 
-    $notification = Notification::factory()->channel(ChannelEnum::Email)->create();
+    $notification = Notification::factory()->create();
 
     expect(fn () => runSendJob($notification->id))->toThrow(RuntimeException::class);
 
@@ -69,26 +59,11 @@ it('восстановление после сбоя: повторная поп�
 
     runSendJob($notification->id);
 
-    deliverChannels();
-
     $fresh = $notification->fresh();
 
     expect($fresh->status)->toBe(NotificationStatusEnum::Sent)->and(
         $fresh->attempts_count
     )->toBe(2);
-});
-
-it('передиспатч не дублирует сообщение в очереди канала', function () : void {
-    $notification = Notification::factory()->channel(ChannelEnum::Email)->create();
-
-    runSendJob($notification->id);
-    runSendJob($notification->id);
-
-    expect(NotificationMailQueue::query()->count())->toBe(1);
-
-    deliverChannels();
-
-    expect($notification->fresh()->status)->toBe(NotificationStatusEnum::Sent);
 });
 
 it('исчерпание попыток переводит уведомление в failed и диспатчит событие', function () : void {

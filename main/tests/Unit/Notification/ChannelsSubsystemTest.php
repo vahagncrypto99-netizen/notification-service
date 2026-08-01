@@ -5,15 +5,19 @@ declare(strict_types=1);
 use App\Base\Notification\Channels\EmailChannelSender;
 use App\Base\Notification\Channels\TelegramChannelSender;
 use App\Base\Notification\Dto\ChannelMessageDto;
-use App\Models\NotificationMailQueue;
-use App\Models\NotificationMessengerQueue;
+use App\Base\Notification\Enum\ChannelEnum;
+use App\Base\Notification\Enum\NotificationStatusEnum;
+use App\Base\Notification\Jobs\SendNotificationJob;
+use App\Models\Notification;
 use App\Services\Delivery\Mail\DefaultSender;
 use App\Services\Delivery\Mail\Dto\SenderDto;
-use App\Services\Delivery\Mail\Schedule as MailSchedule;
 use App\Services\Delivery\Mail\SenderFactory;
+use App\Services\Delivery\Messenger\Dto\ResponseDto;
+use App\Services\Delivery\Messenger\Dto\SenderDto as MessengerSenderDto;
 use App\Services\Delivery\Messenger\MessageFormatter;
-use App\Services\Delivery\Messenger\MessengerResolver;
+use App\Services\Delivery\Messenger\Telegram\TelegramClient;
 use App\Services\Delivery\PermanentDeliveryException;
+use Illuminate\Support\Facades\Log;
 
 function channelMessage(int $notification_id = 1, int $user_id = 7, string $message = 'Привет') : ChannelMessageDto
 {
@@ -25,46 +29,17 @@ function channelMessage(int $notification_id = 1, int $user_id = 7, string $mess
 }
 
 describe('почтовый канал', function () : void {
-    it('кладёт письмо в очередь канала с дефолтным отправителем', function () : void {
+    it('отправляет письмо дефолтным сендером с вычисленным from', function () : void {
+        Log::spy();
+
         app(EmailChannelSender::class)->send(channelMessage());
 
-        $record = NotificationMailQueue::query()->firstOrFail();
-
-        expect($record->to_email)->toBe('user-7@example.stub')->and(
-            $record->from_email
-        )->toBe(config('delivery.mail.from.default.email'))->and(
-            $record->sender
-        )->toBe('default')->and($record->priority)->toBe(1);
+        Log::shouldHaveReceived('info')->withArgs(
+            fn (string $message) => str_contains($message, 'user-7@example.stub')
+        )->once();
     });
 
-    it('крон отправляет пачку по приоритету и чистит очередь', function () : void {
-        app(EmailChannelSender::class)->send(channelMessage(1, 7));
-        app(EmailChannelSender::class)->send(channelMessage(2, 8));
-
-        app(MailSchedule::class)->send();
-
-        expect(NotificationMailQueue::query()->count())->toBe(0);
-    });
-
-    it('отложенное письмо не отправляется раньше времени', function () : void {
-        app(SenderFactory::class)->mail()->send(
-            SenderDto::from([
-                'from_email' => null,
-                'from_name' => null,
-                'to_email' => 'user@example.stub',
-                'subject' => 'Отложенное',
-                'message' => 'позже',
-                'queue' => true,
-                'send_at' => now()->addHour()->toDateTimeString(),
-            ])
-        );
-
-        app(MailSchedule::class)->send();
-
-        expect(NotificationMailQueue::query()->count())->toBe(1);
-    });
-
-    it('невалидный адрес получателя — неисправимый отказ без записи в очередь', function () : void {
+    it('невалидный адрес получателя — неисправимый отказ', function () : void {
         expect(fn () => app(SenderFactory::class)->mail()->send(
             SenderDto::from([
                 'from_email' => null,
@@ -72,11 +47,8 @@ describe('почтовый канал', function () : void {
                 'to_email' => 'не-адрес',
                 'subject' => 'x',
                 'message' => 'y',
-                'queue' => true,
             ])
         ))->toThrow(PermanentDeliveryException::class);
-
-        expect(NotificationMailQueue::query()->count())->toBe(0);
     });
 });
 
@@ -91,37 +63,45 @@ describe('фабрика сендеров', function () : void {
 });
 
 describe('telegram канал', function () : void {
-    it('кладёт сообщение в очередь мессенджера', function () : void {
+    it('отправляет сообщение через клиент с троттлингом', function () : void {
+        Log::spy();
+
         app(TelegramChannelSender::class)->send(channelMessage(1, 9, 'В телегу'));
 
-        $record = NotificationMessengerQueue::query()->firstOrFail();
-
-        expect($record->messenger)->toBe('telegram')->and(
-            $record->messenger_id
-        )->toBe('user-9')->and($record->message)->toBe('В телегу');
+        Log::shouldHaveReceived('info')->withArgs(
+            fn (string $message) => str_contains($message, 'user-9')
+        )->once();
     });
 
-    it('крон отправляет пачку и чистит очередь', function () : void {
-        app(TelegramChannelSender::class)->send(channelMessage());
-
-        app(MessengerResolver::class)->makeSchedule('telegram')->send();
-
-        expect(NotificationMessengerQueue::query()->count())->toBe(0);
-    });
-
-    it('при сбое отправки сообщение возвращается в очередь на повтор', function () : void {
-        app(TelegramChannelSender::class)->send(channelMessage());
-
+    it('транзиентный сбой клиента пробрасывается для ретрая джобы', function () : void {
         config(['notification.simulate_failures' => true]);
 
-        app(MessengerResolver::class)->makeSchedule('telegram')->send();
+        app(TelegramChannelSender::class)->send(channelMessage());
+    })->throws(RuntimeException::class);
 
-        expect(NotificationMessengerQueue::query()->count())->toBe(1);
+    it('блокировка бота получателем гасит уведомление без ретраев', function () : void {
+        $blocked_client = new class extends TelegramClient
+        {
+            public function send(MessengerSenderDto $data) : ResponseDto
+            {
+                return ResponseDto::error('Получатель заблокировал бота', true, false);
+            }
+        };
+
+        app()->instance(TelegramClient::class, $blocked_client);
+
+        $notification = Notification::factory()->channel(
+            ChannelEnum::Telegram
+        )->create();
+
+        app()->call([new SendNotificationJob($notification->id), 'handle']);
+
+        $fresh = $notification->fresh();
+
+        expect($fresh->status)->toBe(NotificationStatusEnum::Failed)->and(
+            $fresh->last_error
+        )->toContain('недоступен');
     });
-
-    it('резолвер бросает исключение для неизвестного мессенджера', function () : void {
-        app(MessengerResolver::class)->makeSchedule('vk');
-    })->throws(InvalidArgumentException::class);
 });
 
 describe('форматтер сообщений', function () : void {
