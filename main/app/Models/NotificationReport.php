@@ -54,10 +54,12 @@ class NotificationReport extends Model
     }
 
     /**
-     * Установить статус отчёта (без сохранения).
+     * Установить статус и сохранить запись.
      */
     public function setStatus(ReportStatusEnum $status) : void
     {
         $this->status = $status;
+
+        $this->save();
     }
 }

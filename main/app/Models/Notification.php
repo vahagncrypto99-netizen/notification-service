@@ -65,10 +65,12 @@ class Notification extends Model
     }
 
     /**
-     * Установить статус уведомления (без сохранения).
+     * Установить статус и сохранить запись.
      */
     public function setStatus(NotificationStatusEnum $status) : void
     {
         $this->status = $status;
+
+        $this->save();
     }
 }
