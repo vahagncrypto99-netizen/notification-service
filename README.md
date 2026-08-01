@@ -26,6 +26,34 @@ make setup
 - Проверки качества — `make check` (тесты + PHPStan + Pint)
 - Логи — `make logs`; RabbitMQ UI — `http://localhost:15672` (креды в корневом `.env`)
 
+
+## Как проверить API
+
+**Через Swagger UI** — `http://localhost/api/documentation` (главная страница редиректит туда же):
+
+1. Нажмите **Authorize** и заполните:
+   - `bearer_token` → `local-dev-token`
+   - `request_signature` (X-Signature) → `local-dev-secret` — **вводится signing secret, не подпись**
+   - `request_timestamp` — можно оставить пустым
+2. **Try it out** на любом эндпоинте → Execute.
+
+UI сам подписывает каждый запрос (интерцептор считает HMAC канонического запроса через Web Crypto и подставляет свежий timestamp) — руками подпись вводить не нужно. Значения кредов — из `API_AUTH_CLIENTS` в `main/.env` (пары `token:secret`).
+
+**Через curl** (подпись считается по той же формуле):
+
+```bash
+TS=$(date +%s); BODY='{"message":"Привет","user_id":1,"channel":"email"}'
+SIG=$(printf 'POST\n/api/notifications\n%s\n%s' "$TS" "$BODY" | \
+      openssl dgst -sha256 -hmac local-dev-secret | awk '{print $2}')
+
+curl -X POST http://localhost/api/notifications \
+  -H "Authorization: Bearer local-dev-token" \
+  -H "X-Timestamp: $TS" -H "X-Signature: $SIG" \
+  -H "Content-Type: application/json" -d "$BODY"
+```
+
+Доставку видно в `make logs` (воркер → очередь канала → крон-отправка), статус — `GET /api/notifications?user_id=1`.
+
 ## Архитектурные решения (кратко — что и почему)
 
 - **Домен и доставка разделены.** `app/Base/Notification` — бизнес (статусная машина, ретраи, отчёты, события); `app/Services/Delivery` — физическая доставка (очереди каналов с приоритетом/отложкой, фабрика именованных сендеров, крон-отправка, троттлинг Telegram). Домен знает только `ChannelSenderInterface` — новый канал или провайдер добавляется конфигом и классом, без правок существующего кода.
