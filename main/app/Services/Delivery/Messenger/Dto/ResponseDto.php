@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Messenger\Dto;
+namespace App\Services\Delivery\Messenger\Dto;
 
 use Spatie\LaravelData\Data;
 

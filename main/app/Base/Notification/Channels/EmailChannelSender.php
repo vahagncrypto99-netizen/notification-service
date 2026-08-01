@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Base\Notification\Channels;
 
 use App\Base\Notification\Dto\ChannelMessageDto;
-use App\Services\Notifications\Channels\Mail\Dto\SenderDto;
-use App\Services\Notifications\Notification;
+use App\Services\Delivery\Mail\Dto\SenderDto;
+use App\Services\Delivery\Mail\SenderFactory;
 use RuntimeException;
 
 class EmailChannelSender implements ChannelSenderInterface
@@ -15,7 +15,7 @@ class EmailChannelSender implements ChannelSenderInterface
      * EmailChannelSender constructor.
      */
     public function __construct(
-        private readonly Notification $notifications,
+        private readonly SenderFactory $mail_sender_factory,
     ) {
         //
     }
@@ -32,7 +32,7 @@ class EmailChannelSender implements ChannelSenderInterface
             throw new RuntimeException('Симулированный сбой отправки email.');
         }
 
-        $this->notifications->mail()->send(SenderDto::from([
+        $this->mail_sender_factory->mail()->send(SenderDto::from([
             'from_email' => null,
             'from_name' => null,
             'to_email' => "user-{$message->user_id}@example.stub",

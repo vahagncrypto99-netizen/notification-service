@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications;
+namespace App\Services\Delivery\Mail;
 
-use App\Services\Notifications\Contracts\MailSender;
 use RuntimeException;
 
-class Notification
+class SenderFactory
 {
     /**
      * Конфигурация подсистемы уведомлений.
@@ -19,12 +18,12 @@ class Notification
     /**
      * Кэш созданных mail-сендеров.
      *
-     * @var array<string, MailSender>
+     * @var array<string, MailSenderInterface>
      */
     protected array $mail_senders = [];
 
     /**
-     * Notification constructor.
+     * SenderFactory constructor.
      */
     public function __construct()
     {
@@ -35,7 +34,7 @@ class Notification
      * Получение реализации сендера почты по имени
      * (без имени — дефолтный из конфига).
      */
-    public function mail(?string $sender = null) : MailSender
+    public function mail(?string $sender = null) : MailSenderInterface
     {
         $sender = $sender ?: (string) $this->config['mail']['default_sender'];
 
@@ -51,7 +50,7 @@ class Notification
      *
      * @throws RuntimeException
      */
-    protected function resolveMailSender(string $sender_name) : MailSender
+    protected function resolveMailSender(string $sender_name) : MailSenderInterface
     {
         $handler = $this->config['mail']['senders'][$sender_name]['handler'] ?? null;
 
@@ -61,9 +60,9 @@ class Notification
 
         $sender = app($handler);
 
-        if (! $sender instanceof MailSender) {
+        if (! $sender instanceof MailSenderInterface) {
             throw new RuntimeException(
-                "Сендер mail \"{$sender_name}\" не реализует ".MailSender::class.'.'
+                "Сендер mail \"{$sender_name}\" не реализует ".MailSenderInterface::class.'.'
             );
         }
 

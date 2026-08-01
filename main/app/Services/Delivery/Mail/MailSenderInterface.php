@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Contracts;
+namespace App\Services\Delivery\Mail;
 
-use App\Services\Notifications\Channels\Mail\Dto\SenderDto;
+use App\Services\Delivery\Mail\Dto\SenderDto;
 
-interface MailSender
+interface MailSenderInterface
 {
     /**
      * Отправка письма (или постановка в очередь канала).

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\SenderServices\Telegram;
+namespace App\Services\Delivery\Messenger\Telegram;
 
-use App\Services\Notifications\Channels\Messenger\Dto\ResponseDto;
-use App\Services\Notifications\Channels\Messenger\Dto\SenderDto;
-use App\Services\Notifications\Contracts\MessengerSender;
+use App\Services\Delivery\Messenger\Dto\ResponseDto;
+use App\Services\Delivery\Messenger\Dto\SenderDto;
+use App\Services\Delivery\Messenger\MessengerSenderInterface;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 use Throwable;
 
-class Telegram implements MessengerSender
+class TelegramClient implements MessengerSenderInterface
 {
     /**
      * Название ключа rate limiter-а.

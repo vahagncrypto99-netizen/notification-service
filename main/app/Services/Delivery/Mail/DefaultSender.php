@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Mail;
+namespace App\Services\Delivery\Mail;
 
-use App\Services\Notifications\Channels\Mail\Dto\SenderDto;
+use App\Services\Delivery\Mail\Dto\SenderDto;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 

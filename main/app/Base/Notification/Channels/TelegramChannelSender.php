@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Base\Notification\Channels;
 
 use App\Base\Notification\Dto\ChannelMessageDto;
-use App\Services\Notifications\Channels\Messenger\Messenger;
-use App\Services\Notifications\Repositories\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\Messenger;
+use App\Services\Delivery\Messenger\MessengerQueueRepository;
 use RuntimeException;
 
 class TelegramChannelSender implements ChannelSenderInterface

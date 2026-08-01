@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Messenger;
+namespace App\Services\Delivery\Messenger;
 
 use App\Models\NotificationMessengerQueue;
-use App\Services\Notifications\Channels\Messenger\Dto\SenderDto;
-use App\Services\Notifications\Contracts\MessengerSender;
-use App\Services\Notifications\Repositories\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\Dto\SenderDto;
+use App\Services\Delivery\Messenger\MessengerQueueRepository;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -18,7 +17,7 @@ class Schedule
      */
     public function __construct(
         protected MessengerQueueRepository $queue,
-        protected MessengerSender $sender,
+        protected MessengerSenderInterface $sender,
         protected MessageFormatter $message_formatter,
         protected string $messenger,
     ) {

@@ -1,8 +1,8 @@
 <?php
 
-use App\Services\Notifications\Channels\Mail\DefaultSender;
-use App\Services\Notifications\Channels\Messenger\MessageFormatter;
-use App\Services\Notifications\SenderServices\Telegram\Telegram;
+use App\Services\Delivery\Mail\DefaultSender;
+use App\Services\Delivery\Messenger\MessageFormatter;
+use App\Services\Delivery\Messenger\Telegram\TelegramClient;
 
 return [
 
@@ -52,7 +52,7 @@ return [
 
     'messengers' => [
         'telegram' => [
-            'sender' => Telegram::class,
+            'sender' => TelegramClient::class,
             'message_formatter' => MessageFormatter::class,
         ],
     ],

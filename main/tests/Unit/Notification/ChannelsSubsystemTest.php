@@ -7,12 +7,12 @@ use App\Base\Notification\Channels\TelegramChannelSender;
 use App\Base\Notification\Dto\ChannelMessageDto;
 use App\Models\NotificationMailQueue;
 use App\Models\NotificationMessengerQueue;
-use App\Services\Notifications\Channels\Mail\DefaultSender;
-use App\Services\Notifications\Channels\Mail\Dto\SenderDto;
-use App\Services\Notifications\Channels\Mail\Schedule as MailSchedule;
-use App\Services\Notifications\Channels\Messenger\MessageFormatter;
-use App\Services\Notifications\Channels\Messenger\MessengerResolver;
-use App\Services\Notifications\Notification;
+use App\Services\Delivery\Mail\DefaultSender;
+use App\Services\Delivery\Mail\Dto\SenderDto;
+use App\Services\Delivery\Mail\Schedule as MailSchedule;
+use App\Services\Delivery\Mail\SenderFactory;
+use App\Services\Delivery\Messenger\MessageFormatter;
+use App\Services\Delivery\Messenger\MessengerResolver;
 
 function channelMessage(int $notification_id = 1, int $user_id = 7, string $message = 'Привет') : ChannelMessageDto
 {
@@ -46,7 +46,7 @@ describe('почтовый канал', function () : void {
     });
 
     it('отложенное письмо не отправляется раньше времени', function () : void {
-        app(Notification::class)->mail()->send(
+        app(SenderFactory::class)->mail()->send(
             SenderDto::from([
                 'from_email' => null,
                 'from_name' => null,
@@ -64,7 +64,7 @@ describe('почтовый канал', function () : void {
     });
 
     it('невалидный адрес получателя пропускается без записи в очередь', function () : void {
-        app(Notification::class)->mail()->send(
+        app(SenderFactory::class)->mail()->send(
             SenderDto::from([
                 'from_email' => null,
                 'from_name' => null,
@@ -81,11 +81,11 @@ describe('почтовый канал', function () : void {
 
 describe('фабрика сендеров', function () : void {
     it('отдаёт дефолтный сендер по конфигу', function () : void {
-        expect(app(Notification::class)->mail())->toBeInstanceOf(DefaultSender::class);
+        expect(app(SenderFactory::class)->mail())->toBeInstanceOf(DefaultSender::class);
     });
 
     it('бросает исключение для неизвестного сендера', function () : void {
-        app(Notification::class)->mail('unisender');
+        app(SenderFactory::class)->mail('unisender');
     })->throws(RuntimeException::class);
 });
 

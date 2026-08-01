@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Messenger;
+namespace App\Services\Delivery\Messenger;
 
-use App\Services\Notifications\Repositories\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\MessengerQueueRepository;
 use InvalidArgumentException;
 
 class MessengerResolver

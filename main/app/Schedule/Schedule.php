@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Schedule;
 
-use App\Services\Notifications\Channels\Mail\Schedule as MailSchedule;
-use App\Services\Notifications\Channels\Messenger\MessengerResolver;
+use App\Services\Delivery\Mail\Schedule as MailSchedule;
+use App\Services\Delivery\Messenger\MessengerResolver;
 use Illuminate\Console\Scheduling\Schedule as SystemSchedule;
 
 class Schedule

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Repositories;
+namespace App\Services\Delivery\Messenger;
 
 use App\Models\NotificationMessengerQueue;
 use App\Repository\Base;

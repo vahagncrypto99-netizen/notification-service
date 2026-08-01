@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Messenger;
+namespace App\Services\Delivery\Messenger;
 
 use Illuminate\Support\Facades\Log;
 

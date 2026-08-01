@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Mail\Dto;
+namespace App\Services\Delivery\Mail\Dto;
 
 use Spatie\LaravelData\Data;
 

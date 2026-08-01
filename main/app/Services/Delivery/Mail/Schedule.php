@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notifications\Channels\Mail;
+namespace App\Services\Delivery\Mail;
 
 use App\Models\NotificationMailQueue;
-use App\Services\Notifications\Channels\Mail\Dto\SenderDto;
-use App\Services\Notifications\Notification;
-use App\Services\Notifications\Repositories\MailQueueRepository;
+use App\Services\Delivery\Mail\Dto\SenderDto;
+use App\Services\Delivery\Mail\MailQueueRepository;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -18,7 +17,7 @@ class Schedule
      */
     public function __construct(
         protected MailQueueRepository $mail_queue_repository,
-        protected Notification $notification,
+        protected SenderFactory $sender_factory,
     ) {
         //
     }
@@ -49,7 +48,7 @@ class Schedule
          */
         foreach ($records as $record) {
             try {
-                $this->notification->mail($record->sender)->send(SenderDto::from([
+                $this->sender_factory->mail($record->sender)->send(SenderDto::from([
                     'from_email' => $record->from_email,
                     'from_name' => $record->from_name,
                     'to_email' => $record->to_email,
