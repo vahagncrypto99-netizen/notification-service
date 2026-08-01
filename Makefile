@@ -20,7 +20,12 @@ setup:
 	$(DC) exec -T app composer install
 	@grep -q '^APP_KEY=.\+' main/.env || $(DC) exec -T app php artisan key:generate --force
 	$(DC) exec -T app php artisan migrate --force
+	$(DC) exec -T app php artisan l5-swagger:generate
 	@echo "→ Готово: http://localhost/api (RabbitMQ UI: http://localhost:15672)"
+
+# Генерация OpenAPI-документации (Swagger UI: /api/documentation)
+docs:
+	$(DC) exec -T app php artisan l5-swagger:generate
 
 # Прогон всех проверок качества
 check:
@@ -67,6 +72,7 @@ help:
 	@echo "Notification Service:"
 	@echo "  make setup           — первый запуск с нуля (env, сборка, composer, миграции)"
 	@echo "  make check           — тесты + PHPStan + Pint"
+	@echo "  make docs            — сгенерировать OpenAPI-документацию"
 	@echo "  make up              — поднять контейнеры"
 	@echo "  make down            — остановить и удалить контейнеры"
 	@echo "  make restart         — перезапуск"

@@ -7,10 +7,23 @@ namespace App\Http\Resources;
 use App\Models\NotificationReport;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Attributes as OA;
 
 /**
  * @mixin NotificationReport
  */
+#[OA\Schema(
+    schema: 'Report',
+    properties: [
+        new OA\Property(property: 'id', type: 'integer', example: 1),
+        new OA\Property(property: 'user_id', type: 'integer', example: 42),
+        new OA\Property(property: 'period_from', type: 'string', format: 'date', example: '2026-07-01'),
+        new OA\Property(property: 'period_to', type: 'string', format: 'date', example: '2026-08-01'),
+        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'processing', 'done', 'failed'], example: 'done'),
+        new OA\Property(property: 'error', type: 'string', nullable: true, example: null),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+    ]
+)]
 class NotificationReportResource extends JsonResource
 {
     /**

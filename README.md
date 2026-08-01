@@ -22,6 +22,7 @@ make setup
 
 - API — `http://localhost/api/...`; аутентификация s2s: `Authorization: Bearer <token>` + HMAC-подпись канонического запроса (`X-Timestamp`, `X-Signature = hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n BODY)`), пары `token:secret` — в `API_AUTH_CLIENTS` (`main/.env`)
 - Health — `http://localhost/api/health` (БД, брокер, кэш; без подписи)
+- Swagger UI — `http://localhost/api/documentation` (OpenAPI 3, PHP-атрибуты swagger-php; перегенерация — `make docs`)
 - Проверки качества — `make check` (тесты + PHPStan + Pint)
 - Логи — `make logs`; RabbitMQ UI — `http://localhost:15672` (креды в корневом `.env`)
 

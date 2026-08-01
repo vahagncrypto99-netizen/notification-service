@@ -12,6 +12,7 @@ use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -29,6 +30,32 @@ class NotificationReportController extends Controller
     /**
      * Запрос генерации отчёта за период.
      */
+    #[OA\Post(
+        path: '/reports',
+        summary: 'Запросить генерацию отчёта',
+        description: 'Создаёт отчёт в статусе pending; генерация выполняется асинхронно.',
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        tags: ['Отчёты'],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
+            required: ['user_id', 'period_from', 'period_to'],
+            properties: [
+                new OA\Property(property: 'user_id', type: 'integer', minimum: 1, example: 42),
+                new OA\Property(property: 'period_from', type: 'string', format: 'date', example: '2026-07-01'),
+                new OA\Property(property: 'period_to', type: 'string', format: 'date', example: '2026-08-01'),
+            ]
+        )),
+        responses: [
+            new OA\Response(response: 201, description: 'Генерация запрошена', content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Генерация отчёта запрошена.'),
+                new OA\Property(property: 'payload', properties: [
+                    new OA\Property(property: 'report', ref: '#/components/schemas/Report'),
+                ], type: 'object'),
+            ])),
+            new OA\Response(response: 422, description: 'Ошибка валидации', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 401, description: 'Не аутентифицирован', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ]
+    )]
     public function store(Request $request) : JsonResponse
     {
         try {
@@ -53,6 +80,24 @@ class NotificationReportController extends Controller
     /**
      * Статус готовности отчёта.
      */
+    #[OA\Get(
+        path: '/reports/{report_id}',
+        summary: 'Статус готовности отчёта',
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        tags: ['Отчёты'],
+        parameters: [new OA\Parameter(name: 'report_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
+        responses: [
+            new OA\Response(response: 200, description: 'Отчёт', content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Отчёт получен.'),
+                new OA\Property(property: 'payload', properties: [
+                    new OA\Property(property: 'report', ref: '#/components/schemas/Report'),
+                ], type: 'object'),
+            ])),
+            new OA\Response(response: 404, description: 'Не найден', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(response: 401, description: 'Не аутентифицирован', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ]
+    )]
     public function show(int $report_id) : JsonResponse
     {
         try {
@@ -73,6 +118,20 @@ class NotificationReportController extends Controller
     /**
      * Скачивание готового отчёта.
      */
+    #[OA\Get(
+        path: '/reports/{report_id}/download',
+        summary: 'Скачать готовый отчёт',
+        description: 'Отдаёт файл отчёта; до готовности отвечает 409.',
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        tags: ['Отчёты'],
+        parameters: [new OA\Parameter(name: 'report_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
+        responses: [
+            new OA\Response(response: 200, description: 'CSV-файл отчёта', content: new OA\MediaType(mediaType: 'text/csv')),
+            new OA\Response(response: 409, description: 'Отчёт не готов', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(response: 404, description: 'Не найден', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+            new OA\Response(response: 401, description: 'Не аутентифицирован', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
+        ]
+    )]
     public function download(int $report_id) : Response
     {
         try {
