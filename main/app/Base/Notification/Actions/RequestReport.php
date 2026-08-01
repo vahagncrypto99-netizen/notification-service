@@ -31,8 +31,9 @@ class RequestReport
         $report->user_id = $dto->user_id;
         $report->period_from = $dto->period_from;
         $report->period_to = $dto->period_to;
+        $report->status = ReportStatusEnum::Pending;
 
-        $report->setStatus(ReportStatusEnum::Pending);
+        $report->save();
 
         return $report;
     }
