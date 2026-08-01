@@ -31,7 +31,7 @@ describe('почтовый канал', function () : void {
 
         expect($record->to_email)->toBe('user-7@example.stub')->and(
             $record->from_email
-        )->toBe(config('app_notifications.mail.from.default.email'))->and(
+        )->toBe(config('delivery.mail.from.default.email'))->and(
             $record->sender
         )->toBe('default')->and($record->priority)->toBe(1);
     });

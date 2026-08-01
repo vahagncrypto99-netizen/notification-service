@@ -32,11 +32,11 @@ class SenderDto extends Data
          * Заполнение дефолтными значениями.
          */
         if (empty($this->from_email)) {
-            $this->from_email = (string) config('app_notifications.mail.from.default.email');
+            $this->from_email = (string) config('delivery.mail.from.default.email');
         }
 
         if (empty($this->from_name)) {
-            $this->from_name = (string) config('app_notifications.mail.from.default.name');
+            $this->from_name = (string) config('delivery.mail.from.default.name');
         }
 
         $this->queue = $this->queue ?? true;
@@ -49,7 +49,7 @@ class SenderDto extends Data
      */
     public function getFromAddress() : FromAddressDto
     {
-        $from_list = (array) config('app_notifications.mail.from');
+        $from_list = (array) config('delivery.mail.from');
 
         $from_list_emails = Arr::map($from_list, fn (array $value) => $value['email']);
 

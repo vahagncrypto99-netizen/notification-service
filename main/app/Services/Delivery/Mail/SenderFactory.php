@@ -27,7 +27,7 @@ class SenderFactory
      */
     public function __construct()
     {
-        $this->config = (array) config('app_notifications');
+        $this->config = (array) config('delivery');
     }
 
     /**

@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(NotificationSubsystem::class);
 
         $this->app->singleton(MessengerResolver::class, function () {
-            return new MessengerResolver((array) config('app_notifications.messengers'));
+            return new MessengerResolver((array) config('delivery.messengers'));
         });
 
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
