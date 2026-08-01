@@ -6,6 +6,21 @@ use App\Services\HealthChecker;
 use Illuminate\Database\DatabaseManager;
 
 it('отвечает без аутентификации и показывает состояние зависимостей', function () : void {
+    /**
+     * Проверка брокера подменяется: тест-сьют не должен зависеть
+     * от живого RabbitMQ (CI без контейнера брокера). Реальные
+     * database/cache-проверки при этом исполняются.
+     */
+    $checker = new class(app(DatabaseManager::class), app('queue'), app('cache')) extends HealthChecker
+    {
+        protected function queueAlive() : bool
+        {
+            return true;
+        }
+    };
+
+    app()->instance(HealthChecker::class, $checker);
+
     $this->getJson('/api/health')->assertOk()->assertJson([
         'success' => true,
     ])->assertJsonPath('payload.checks.database', true)->assertJsonPath(

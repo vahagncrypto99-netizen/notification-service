@@ -40,7 +40,8 @@ class NotificationEventSubscriber
         $notification = $event->notification;
 
         Log::info(
-            "Уведомление #{$notification->id} отправлено пользователю {$notification->user_id} через {$notification->channel->value}.",
+            "Уведомление #{$notification->id} отправлено пользователю "
+                ."{$notification->user_id} через {$notification->channel->value}.",
             ['attempts' => $notification->attempts_count]
         );
 
@@ -58,7 +59,8 @@ class NotificationEventSubscriber
         $notification = $event->notification;
 
         Log::error(
-            "Уведомление #{$notification->id} не доставлено пользователю {$notification->user_id} через {$notification->channel->value}.",
+            "Уведомление #{$notification->id} не доставлено пользователю "
+                ."{$notification->user_id} через {$notification->channel->value}.",
             [
                 'attempts' => $notification->attempts_count,
                 'error' => $notification->last_error,

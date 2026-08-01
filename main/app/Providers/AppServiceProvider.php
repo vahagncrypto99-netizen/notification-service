@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Base\Notification\Channels\ChannelSenderResolver;
+use App\Base\Notification\Channels\DeliveryResultHandler;
+use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Base\Notification\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
 use App\Services\ApiSignatureValidator;
-use App\Services\Delivery\Mail\SenderFactory as NotificationSubsystem;
+use App\Services\Delivery\DeliveryResultHandlerInterface;
+use App\Services\Delivery\Mail\SenderFactory;
 use App\Services\Delivery\Messenger\MessengerResolver;
 use App\Services\EventPublisher\EventEnvelopeFactory;
 use App\Services\EventPublisher\EventPublisherInterface;
@@ -30,13 +33,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register() : void
     {
-        $this->app->singleton(ChannelSenderResolver::class);
-        $this->app->singleton(ReportFormatterResolver::class);
-        $this->app->singleton(NotificationSubsystem::class);
-
-        $this->app->singleton(MessengerResolver::class, function () {
-            return new MessengerResolver((array) config('delivery.messengers'));
+        $this->app->singleton(ChannelSenderResolver::class, function (Application $app) {
+            return new ChannelSenderResolver($app, (array) config('notification.channels'));
         });
+
+        $this->app->singleton(ReportFormatterResolver::class, function (Application $app) {
+            return new ReportFormatterResolver(
+                $app,
+                (string) config('notification.reports.format'),
+                (array) config('notification.reports.formatters'),
+            );
+        });
+
+        $this->app->singleton(SenderFactory::class, function (Application $app) {
+            return new SenderFactory($app, (array) config('delivery'));
+        });
+
+        $this->app->singleton(MessengerResolver::class, function (Application $app) {
+            return new MessengerResolver($app, (array) config('delivery.messengers'));
+        });
+
+        $this->app->bind(DeliveryResultHandlerInterface::class, DeliveryResultHandler::class);
 
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
             return new ReportFileStorage(
@@ -63,11 +80,12 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->bind(ApiSignatureValidator::class, function () {
+        $this->app->singleton(ApiSignatureValidator::class, function (Application $app) {
             return new ApiSignatureValidator(
                 $this->parseApiClients((string) config('auth.api.clients')),
                 (int) config('auth.api.signature_ttl'),
                 $this->validatedSignatureAlgo((string) config('auth.api.signature_algo')),
+                $app->make('cache.store'),
             );
         });
     }
@@ -85,21 +103,44 @@ class AppServiceProvider extends ServiceProvider
         $this->app->make(ApiSignatureValidator::class);
 
         /**
-         * Лимит запросов на сервис-клиент (bulkhead): взбесившийся
-         * клиент упирается в свой лимит, не задевая остальных.
-         * Ключ — токен клиента (хеш, чтобы не светить токен в кэше),
-         * до аутентификации — IP.
+         * Каждый канал из ChannelEnum обязан иметь отправителя в конфиге —
+         * рассинхрон enum и карты каналов виден на старте, а не на первой
+         * отправке.
+         */
+        foreach (ChannelEnum::cases() as $channel) {
+            if (! isset(config('notification.channels')[$channel->value])) {
+                throw new RuntimeException(
+                    "Канал '{$channel->value}' не имеет отправителя в notification.channels."
+                );
+            }
+        }
+
+        /**
+         * Лимит запросов на сервис-клиент (bulkhead): взбесившийся клиент
+         * упирается в свой лимит, не задевая остальных. До аутентификации
+         * токену доверять нельзя: неизвестный или отсутствующий Bearer
+         * считается по IP — ротация случайных токенов не создаёт свежие
+         * bucket-ы и не обходит лимит. В ключ попадает хеш токена,
+         * а не сам токен.
          */
         RateLimiter::for('api', function (Request $request) {
             $token = $request->bearerToken();
 
-            $key = $token !== null ? hash('sha256', $token) : (string) $request->ip();
+            $known = $token !== null
+                && $this->app->make(ApiSignatureValidator::class)->knownToken($token);
+
+            $key = $known ? hash('sha256', (string) $token) : (string) $request->ip();
 
             return Limit::perMinute((int) config('auth.api.rate_limit'))->by($key)->response(
                 fn () => ApiResponse::error('Слишком много запросов.', 429)
             );
         });
     }
+
+    /**
+     * Минимальная длина секрета подписи.
+     */
+    private const MIN_SECRET_LENGTH = 12;
 
     /**
      * Разбор пар «токен:секрет_подписи» из конфигурации.
@@ -117,6 +158,16 @@ class AppServiceProvider extends ServiceProvider
             if ($token === false || $token === '' || $secret === '') {
                 throw new RuntimeException(
                     "Некорректная пара в API_AUTH_CLIENTS: '{$pair}' — ожидается формат token:secret."
+                );
+            }
+
+            if (isset($clients[$token])) {
+                throw new RuntimeException("Дубликат токена в API_AUTH_CLIENTS: '{$token}'.");
+            }
+
+            if (strlen($secret) < self::MIN_SECRET_LENGTH) {
+                throw new RuntimeException(
+                    "Секрет токена '{$token}' короче ".self::MIN_SECRET_LENGTH.' символов.'
                 );
             }
 

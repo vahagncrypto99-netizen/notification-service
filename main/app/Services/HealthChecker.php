@@ -50,7 +50,7 @@ class HealthChecker
     /**
      * Postgres отвечает на запрос.
      */
-    private function databaseAlive() : bool
+    protected function databaseAlive() : bool
     {
         try {
             $this->database->connection()->select('select 1');
@@ -64,7 +64,7 @@ class HealthChecker
     /**
      * Кэш принимает запись и отдаёт её обратно.
      */
-    private function cacheAlive() : bool
+    protected function cacheAlive() : bool
     {
         try {
             $store = $this->cache_factory->store();
@@ -80,7 +80,7 @@ class HealthChecker
     /**
      * AMQP-канал брокера открывается.
      */
-    private function queueAlive() : bool
+    protected function queueAlive() : bool
     {
         try {
             $queue = $this->queue_factory->connection('rabbitmq');

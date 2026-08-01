@@ -5,9 +5,23 @@ declare(strict_types=1);
 namespace App\Base\Notification\Reports;
 
 use App\Base\Notification\Exceptions\ReportFormatterNotConfiguredException;
+use Illuminate\Contracts\Container\Container;
 
 class ReportFormatterResolver
 {
+    /**
+     * ReportFormatterResolver constructor.
+     *
+     * @param  array<string, class-string>  $formatters  карта «формат → стратегия»
+     */
+    public function __construct(
+        protected Container $container,
+        protected string $format,
+        protected array $formatters,
+    ) {
+        //
+    }
+
     /**
      * Получение стратегии форматирования для настроенного типа отчёта.
      *
@@ -15,16 +29,12 @@ class ReportFormatterResolver
      */
     public function resolve() : ReportFormatterInterface
     {
-        $format = (string) config('notification.reports.format');
-
-        $map = config('notification.reports.formatters', []);
-
-        $formatter_class = $map[$format] ?? null;
+        $formatter_class = $this->formatters[$this->format] ?? null;
 
         if ($formatter_class === null || ! is_subclass_of($formatter_class, ReportFormatterInterface::class)) {
-            throw new ReportFormatterNotConfiguredException($format);
+            throw new ReportFormatterNotConfiguredException($this->format);
         }
 
-        return app($formatter_class);
+        return $this->container->make($formatter_class);
     }
 }

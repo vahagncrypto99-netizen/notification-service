@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\Manager;
+use App\Base\Notification\ReportManager;
 use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationReportResource;
 use App\Http\Responses\ApiResponse;
@@ -22,7 +22,7 @@ class NotificationReportController extends Controller
      * NotificationReportController constructor.
      */
     public function __construct(
-        private readonly Manager $manager
+        private readonly ReportManager $manager
     ) {
         //
     }
@@ -31,7 +31,7 @@ class NotificationReportController extends Controller
      * Запрос генерации отчёта за период.
      */
     #[OA\Post(
-        path: '/reports', description: 'Создаёт отчёт в статусе pending; генерация выполняется асинхронно.', summary: 'Запросить генерацию отчёта', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
+        path: '/reports', description: 'Создаёт отчёт в статусе pending; генерация выполняется асинхронно.', summary: 'Запросить генерацию отчёта', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
             required: ['user_id', 'period_from', 'period_to'],
             properties: [
                 new OA\Property(
@@ -82,7 +82,7 @@ class NotificationReportController extends Controller
     #[OA\Get(
         path: '/reports/{report_id}',
         summary: 'Статус готовности отчёта',
-        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]],
         tags: ['Отчёты'],
         parameters: [new OA\Parameter(name: 'report_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         responses: [
@@ -118,7 +118,7 @@ class NotificationReportController extends Controller
      * Скачивание готового отчёта.
      */
     #[OA\Get(
-        path: '/reports/{report_id}/download', description: 'Отдаёт файл отчёта; до готовности отвечает 409.', summary: 'Скачать готовый отчёт', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]], tags: ['Отчёты'], parameters: [new OA\Parameter(name: 'report_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))], responses: [
+        path: '/reports/{report_id}/download', description: 'Отдаёт файл отчёта; до готовности отвечает 409.', summary: 'Скачать готовый отчёт', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]], tags: ['Отчёты'], parameters: [new OA\Parameter(name: 'report_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))], responses: [
             new OA\Response(response: 200, description: 'CSV-файл отчёта', content: new OA\MediaType(mediaType: 'text/csv')),
             new OA\Response(response: 409, description: 'Отчёт не готов', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
             new OA\Response(response: 404, description: 'Не найден', content: new OA\JsonContent(ref: '#/components/schemas/ApiError')),
@@ -128,7 +128,9 @@ class NotificationReportController extends Controller
     public function download(int $report_id) : Response
     {
         try {
-            return $this->manager->downloadReport($report_id);
+            $file = $this->manager->downloadReport($report_id);
+
+            return response()->download($file->absolute_path, $file->download_name);
         } catch (OperationException $exception) {
             return ApiResponse::error($exception->getMessage(), $exception->getStatusCode());
         } catch (Throwable $exception) {

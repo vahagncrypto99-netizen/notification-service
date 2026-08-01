@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\EventPublisher;
 
 use App\Dto\EventEnvelopeDto;
-use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
@@ -15,6 +14,11 @@ use VladimirYuldashev\LaravelQueueRabbitMQ\Queue\RabbitMQQueue;
 
 class RabbitMqEventPublisher implements EventPublisherInterface
 {
+    /**
+     * Канал публикации (отдельный от канала consumer-а).
+     */
+    private ?AMQPChannel $publish_channel = null;
+
     /**
      * RabbitMqEventPublisher constructor.
      *
@@ -53,10 +57,16 @@ class RabbitMqEventPublisher implements EventPublisherInterface
     }
 
     /**
-     * AMQP-канал из соединения очередей (переиспользуем коннект воркера).
+     * Отдельный AMQP-канал публикации поверх общего соединения:
+     * channel-level ошибка AMQP закрывает канал целиком, и публикация
+     * не должна ронять канал consumer-а воркера.
      */
     private function channel() : AMQPChannel
     {
+        if ($this->publish_channel !== null && $this->publish_channel->is_open()) {
+            return $this->publish_channel;
+        }
+
         $queue = $this->queue_factory->connection('rabbitmq');
 
         if (! $queue instanceof RabbitMQQueue) {
@@ -65,6 +75,6 @@ class RabbitMqEventPublisher implements EventPublisherInterface
             );
         }
 
-        return $queue->getChannel();
+        return $this->publish_channel = $queue->getConnection()->channel();
     }
 }

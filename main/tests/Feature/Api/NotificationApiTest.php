@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Base\Notification\Jobs\SendNotificationJob;
+use App\Base\Notification\Repository\NotificationRepository;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Queue;
 
@@ -148,12 +149,55 @@ it('создание уведомления переживает полный ц
     $response->assertCreated();
 
     /**
-     * QUEUE_CONNECTION=sync: джоба выполняется сразу после коммита —
-     * уведомление в БД уже отправлено.
+     * QUEUE_CONNECTION=sync: джоба выполнилась при dispatch — уведомление
+     * уже поставлено в очередь канала и ждёт крон-отправки.
      */
     $notification = Notification::query()->firstOrFail();
 
-    expect($notification->status)->toBe(NotificationStatusEnum::Sent)->and(
+    expect($notification->status)->toBe(NotificationStatusEnum::Processing)->and(
         $notification->attempts_count
     )->toBe(1);
+
+    /**
+     * Крон-отправка канала замыкает контур: только фактическая
+     * отправка переводит уведомление в sent.
+     */
+    deliverChannels();
+
+    expect($notification->fresh()->status)->toBe(NotificationStatusEnum::Sent);
+});
+
+describe('контракты ответов', function () : void {
+    it('пагинирует историю и отдаёт блок pagination', function () : void {
+        Notification::factory()->count(20)->create(['user_id' => 55]);
+
+        apiGet('/api/notifications?user_id=55')
+            ->assertOk()
+            ->assertJsonCount(15, 'payload.notifications')
+            ->assertJsonPath('payload.pagination.current_page', 1)
+            ->assertJsonPath('payload.pagination.per_page', 15)
+            ->assertJsonPath('payload.pagination.total', 20);
+
+        apiGet('/api/notifications?user_id=55&page=2')
+            ->assertOk()
+            ->assertJsonCount(5, 'payload.notifications')
+            ->assertJsonPath('payload.pagination.current_page', 2);
+    });
+
+    it('неожиданный сбой отдаёт 500 в едином контракте без утечки деталей', function () : void {
+        $repository = Mockery::mock(NotificationRepository::class);
+
+        $repository->shouldReceive('find')->andThrow(new RuntimeException('внутренние детали сбоя'));
+
+        app()->instance(NotificationRepository::class, $repository);
+
+        $response = apiGet('/api/notifications/1');
+
+        $response->assertStatus(500)->assertJson([
+            'success' => false,
+            'message' => 'Не удалось получить уведомление.',
+        ]);
+
+        expect($response->getContent())->not->toContain('внутренние детали сбоя');
+    });
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -57,75 +56,6 @@ abstract class Base
     }
 
     /**
-     * Получение среза данных.
-     *
-     * @return Builder<TModel>
-     */
-    public function getBuilderDataSlice(int $limit, int $offset) : Builder
-    {
-        return $this->query()->limit($limit)->offset($offset);
-    }
-
-    /**
-     * Получить все записи.
-     *
-     * @param  array<int, string>  $columns
-     * @return Collection<int, TModel>
-     */
-    public function getAll(array $columns = ['*']) : Collection
-    {
-        if (empty($columns)) {
-            $columns = ['*'];
-        }
-
-        /** @var Collection<int, TModel> $rows */
-        $rows = $this->query()->get($columns);
-
-        return $rows;
-    }
-
-    /**
-     * Получить все записи по условию.
-     *
-     * @param  array<string, mixed>  $where
-     * @param  array<int, string>  $columns
-     * @return Collection<int, TModel>
-     */
-    public function getAllBy(array $where, array $columns = ['*']) : Collection
-    {
-        if (empty($columns)) {
-            $columns = ['*'];
-        }
-
-        /** @var Collection<int, TModel> $rows */
-        $rows = $this->query()->where($where)->get($columns);
-
-        return $rows;
-    }
-
-    /**
-     * Получить записи по условию.
-     *
-     * @param  array<int, mixed>  $in
-     * @param  array<int, string>  $columns
-     * @return Collection<int, TModel>
-     */
-    public function getWhereIn(
-        string $column,
-        array $in,
-        array $columns = ['*']
-    ) : Collection {
-        if (empty($columns)) {
-            $columns = ['*'];
-        }
-
-        /** @var Collection<int, TModel> $rows */
-        $rows = $this->query()->whereIn($column, $in)->get($columns);
-
-        return $rows;
-    }
-
-    /**
      * Получить запись по первичному ключу.
      * Если ничего не будет найдено, то будет выброшено исключение.
      *
@@ -165,40 +95,11 @@ abstract class Base
     }
 
     /**
-     * Поиск записи по условиям.
-     *
-     * @param  array<string, mixed>  $where
-     * @param  array<int, string>  $columns
-     * @return TModel|null
-     */
-    public function findBy(
-        array $where,
-        array $columns = ['*'],
-        string $where_boolean = 'and'
-    ) : ?Model {
-        if (empty($columns)) {
-            $columns = ['*'];
-        }
-
-        return $this->query()->where($where, null, null, $where_boolean)->first($columns);
-    }
-
-    /**
      * Получить количество записей в таблице.
      */
     public function count() : int
     {
         return $this->query()->count();
-    }
-
-    /**
-     * Получить количество записей по условию.
-     *
-     * @param  array<string, mixed>  $where
-     */
-    public function countBy(array $where) : int
-    {
-        return $this->query()->where($where)->count();
     }
 
     // ****************************************************************

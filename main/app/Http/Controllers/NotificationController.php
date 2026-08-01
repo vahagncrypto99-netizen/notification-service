@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Base\Notification\Dto\CreateNotificationDto;
 use App\Base\Notification\Dto\NotificationHistoryDto;
-use App\Base\Notification\Manager;
+use App\Base\Notification\NotificationManager;
 use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationResource;
 use App\Http\Responses\ApiResponse;
@@ -22,7 +22,7 @@ class NotificationController extends Controller
      * NotificationController constructor.
      */
     public function __construct(
-        private readonly Manager $manager
+        private readonly NotificationManager $manager
     ) {
         //
     }
@@ -31,7 +31,7 @@ class NotificationController extends Controller
      * Создание уведомления.
      */
     #[OA\Post(
-        path: '/notifications', description: 'Создаёт уведомление в статусе processing и ставит доставку в очередь.', summary: 'Создать уведомление', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
+        path: '/notifications', description: 'Создаёт уведомление в статусе processing и ставит доставку в очередь.', summary: 'Создать уведомление', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
             required: ['message', 'user_id', 'channel'],
             properties: [
                 new OA\Property(
@@ -92,7 +92,7 @@ class NotificationController extends Controller
     #[OA\Get(
         path: '/notifications/{notification_id}',
         summary: 'Статус уведомления',
-        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]],
         tags: ['Уведомления'],
         parameters: [new OA\Parameter(name: 'notification_id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         responses: [
@@ -130,7 +130,7 @@ class NotificationController extends Controller
     #[OA\Get(
         path: '/notifications',
         summary: 'История уведомлений пользователя',
-        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
+        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_nonce' => [], 'request_signature' => []]],
         tags: ['Уведомления'],
         parameters: [
             new OA\Parameter(name: 'user_id', in: 'query', required: true, schema: new OA\Schema(type: 'integer', minimum: 1)),

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middlewares\ApiSignatureAuth;
 use App\Providers\EventServiceProvider;
 use App\Schedule\Schedule;
