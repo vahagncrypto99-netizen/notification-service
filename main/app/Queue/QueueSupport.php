@@ -24,7 +24,10 @@ trait QueueSupport
         ])) {
             $queue = QueueSettings::LOW_PRIORITY_QUEUE;
 
-            Log::error("Очередь {$check_queue} не определена, установлена {$queue} очередь.");
+            Log::error('Очередь не определена, применён фолбэк.', [
+                'requested_queue' => $check_queue,
+                'fallback_queue' => $queue,
+            ]);
         }
 
         return $queue;

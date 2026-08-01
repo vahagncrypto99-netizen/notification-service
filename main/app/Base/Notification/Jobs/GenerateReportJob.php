@@ -64,7 +64,9 @@ class GenerateReportJob extends Queue
         $report = $report_repository->find($this->report_id);
 
         if ($report === null) {
-            Log::error("Отчёт #{$this->report_id} не найден, генерация пропущена.");
+            Log::error('Отчёт не найден, генерация пропущена.', [
+                'report_id' => $this->report_id,
+            ]);
 
             return;
         }
@@ -81,7 +83,10 @@ class GenerateReportJob extends Queue
             && $report->refresh()->inStatus(ReportStatusEnum::Processing);
 
         if (! $started && ! $retrying) {
-            Log::info("Отчёт #{$report->id} уже в статусе {$report->refresh()->status->value}, генерация пропущена.");
+            Log::info('Отчёт уже в терминальном статусе, генерация пропущена.', [
+                'report_id' => $report->id,
+                'status' => $report->refresh()->status->value,
+            ]);
 
             return;
         }
@@ -104,7 +109,11 @@ class GenerateReportJob extends Queue
 
         $report_repository->markAsDone($report->id, $file_path);
 
-        Log::info("Отчёт #{$report->id} сгенерирован: {$file_path}.");
+        Log::info('Отчёт сгенерирован.', [
+            'report_id' => $report->id,
+            'user_id' => $report->user_id,
+            'file_path' => $file_path,
+        ]);
     }
 
     /**
@@ -123,9 +132,9 @@ class GenerateReportJob extends Queue
          */
         app(ReportFileStorage::class)->deleteTemp($this->report_id);
 
-        Log::error(
-            "Генерация отчёта #{$this->report_id} упала.",
-            ['error' => $exception?->getMessage()]
-        );
+        Log::error('Генерация отчёта упала.', [
+            'report_id' => $this->report_id,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 }

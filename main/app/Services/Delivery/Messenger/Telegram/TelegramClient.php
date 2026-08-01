@@ -51,16 +51,17 @@ class TelegramClient implements MessengerSenderInterface
                 throw new RuntimeException('Симулированный сбой отправки в Telegram.');
             }
 
-            Log::info("[telegram] Сообщение отправлено в чат {$data->chat_id}.", [
+            Log::info('[telegram] Сообщение отправлено.', [
+                'chat_id' => $data->chat_id,
                 'message' => $data->message,
             ]);
 
             return ResponseDto::success();
         } catch (Throwable $exception) {
-            Log::error(
-                "Ошибка отправки Telegram сообщения. Chat ID: {$data->chat_id}.",
-                ['error' => $exception->getMessage()]
-            );
+            Log::error('[telegram] Ошибка отправки сообщения.', [
+                'chat_id' => $data->chat_id,
+                'error' => $exception->getMessage(),
+            ]);
 
             return ResponseDto::error($exception->getMessage(), false, true);
         }

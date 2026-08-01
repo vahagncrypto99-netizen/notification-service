@@ -55,10 +55,11 @@ class RedispatchStuckNotifications extends Command
             foreach ($stuck as $notification) {
                 SendNotificationJob::dispatch($notification->id);
 
-                Log::warning(
-                    "Уведомление #{$notification->id} зависло в processing, джоба передиспатчена.",
-                    ['attempts' => $notification->attempts_count]
-                );
+                Log::warning('Уведомление зависло в processing, джоба передиспатчена.', [
+                    'notification_id' => $notification->id,
+                    'attempts' => $notification->attempts_count,
+                    'stuck_since' => $notification->updated_at->toIso8601String(),
+                ]);
             }
 
             $total += $stuck->count();

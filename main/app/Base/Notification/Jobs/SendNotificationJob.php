@@ -66,7 +66,9 @@ class SendNotificationJob extends Queue
         $notification = $repository->find($this->notification_id);
 
         if ($notification === null) {
-            Log::error("Уведомление #{$this->notification_id} не найдено, отправка пропущена.");
+            Log::error('Уведомление не найдено, отправка пропущена.', [
+                'notification_id' => $this->notification_id,
+            ]);
 
             return;
         }
@@ -76,9 +78,10 @@ class SendNotificationJob extends Queue
          * повторная отправка невозможна (гонка watchdog против живой джобы).
          */
         if (! $notification->inStatus(NotificationStatusEnum::Processing)) {
-            Log::info(
-                "Уведомление #{$notification->id} уже в статусе {$notification->status->value}, отправка пропущена."
-            );
+            Log::info('Уведомление уже в терминальном статусе, отправка пропущена.', [
+                'notification_id' => $notification->id,
+                'status' => $notification->status->value,
+            ]);
 
             return;
         }
@@ -102,10 +105,12 @@ class SendNotificationJob extends Queue
                 NotificationFailed::dispatch($notification->refresh());
             }
 
-            Log::error(
-                "Уведомление #{$notification->id} не может быть доставлено.",
-                ['error' => $exception->getMessage()]
-            );
+            Log::error('Уведомление не может быть доставлено.', [
+                'notification_id' => $notification->id,
+                'user_id' => $notification->user_id,
+                'channel' => $notification->channel->value,
+                'error' => $exception->getMessage(),
+            ]);
 
             return;
         } catch (Throwable $exception) {
@@ -138,9 +143,12 @@ class SendNotificationJob extends Queue
             NotificationFailed::dispatch($notification->refresh());
         }
 
-        Log::error(
-            "Уведомление #{$this->notification_id} не доставлено, попытки исчерпаны.",
-            ['error' => $exception?->getMessage()]
-        );
+        Log::error('Уведомление не доставлено, попытки исчерпаны.', [
+            'notification_id' => $notification->id,
+            'user_id' => $notification->user_id,
+            'channel' => $notification->channel->value,
+            'attempts' => $notification->attempts_count,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 }

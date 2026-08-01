@@ -45,7 +45,11 @@ class ReportManager
 
             return $report;
         } catch (Throwable $exception) {
-            $this->fail('Не удалось запросить генерацию отчёта.', $exception);
+            $this->fail('Не удалось запросить генерацию отчёта.', $exception, [
+                'user_id' => $dto->user_id,
+                'period_from' => $dto->period_from->toDateString(),
+                'period_to' => $dto->period_to->toDateString(),
+            ]);
         }
     }
 
@@ -68,7 +72,9 @@ class ReportManager
         } catch (OperationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            $this->fail('Не удалось получить отчёт.', $exception);
+            $this->fail('Не удалось получить отчёт.', $exception, [
+                'report_id' => $report_id,
+            ]);
         }
     }
 
@@ -90,7 +96,9 @@ class ReportManager
         } catch (OperationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            $this->fail('Не удалось скачать отчёт.', $exception);
+            $this->fail('Не удалось скачать отчёт.', $exception, [
+                'report_id' => $report_id,
+            ]);
         }
     }
 }

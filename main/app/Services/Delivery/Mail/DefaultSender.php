@@ -31,7 +31,8 @@ class DefaultSender extends Sender
 
         $from_address = $data->getFromAddress();
 
-        Log::info("[default] Письмо отправлено: {$data->to_email}.", [
+        Log::info('[default] Письмо отправлено.', [
+            'to_email' => $data->to_email,
             'from' => "{$from_address->from_name} <{$from_address->from_email}>",
             'reply_to' => $from_address->reply_to,
             'subject' => $data->subject,

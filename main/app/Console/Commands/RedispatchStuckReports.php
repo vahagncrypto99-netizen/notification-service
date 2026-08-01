@@ -67,7 +67,10 @@ class RedispatchStuckReports extends Command
             foreach ($stuck as $report) {
                 GenerateReportJob::dispatch($report->id);
 
-                Log::warning("Отчёт #{$report->id} завис в генерации, джоба передиспатчена.");
+                Log::warning('Отчёт завис в генерации, джоба передиспатчена.', [
+                    'report_id' => $report->id,
+                    'stuck_since' => $report->updated_at->toIso8601String(),
+                ]);
             }
 
             $total += $stuck->count();

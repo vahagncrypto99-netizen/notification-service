@@ -43,7 +43,10 @@ class NotificationManager
 
             return $notification;
         } catch (Throwable $exception) {
-            $this->fail('Не удалось создать уведомление.', $exception);
+            $this->fail('Не удалось создать уведомление.', $exception, [
+                'user_id' => $dto->user_id,
+                'channel' => $dto->channel->value,
+            ]);
         }
     }
 
@@ -66,7 +69,9 @@ class NotificationManager
         } catch (OperationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            $this->fail('Не удалось получить уведомление.', $exception);
+            $this->fail('Не удалось получить уведомление.', $exception, [
+                'notification_id' => $notification_id,
+            ]);
         }
     }
 
@@ -86,7 +91,11 @@ class NotificationManager
                 $dto->channel
             );
         } catch (Throwable $exception) {
-            $this->fail('Не удалось получить историю уведомлений.', $exception);
+            $this->fail('Не удалось получить историю уведомлений.', $exception, [
+                'user_id' => $dto->user_id,
+                'status' => $dto->status?->value,
+                'channel' => $dto->channel?->value,
+            ]);
         }
     }
 }

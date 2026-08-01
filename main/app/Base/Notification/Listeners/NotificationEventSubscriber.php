@@ -44,11 +44,12 @@ class NotificationEventSubscriber
     {
         $notification = $event->notification;
 
-        Log::info(
-            "Уведомление #{$notification->id} отправлено пользователю "
-                ."{$notification->user_id} через {$notification->channel->value}.",
-            ['attempts' => $notification->attempts_count]
-        );
+        Log::info('Уведомление отправлено.', [
+            'notification_id' => $notification->id,
+            'user_id' => $notification->user_id,
+            'channel' => $notification->channel->value,
+            'attempts' => $notification->attempts_count,
+        ]);
 
         $this->publishEvent(self::EVENT_SENT, $notification);
     }
@@ -62,14 +63,13 @@ class NotificationEventSubscriber
     {
         $notification = $event->notification;
 
-        Log::error(
-            "Уведомление #{$notification->id} не доставлено пользователю "
-                ."{$notification->user_id} через {$notification->channel->value}.",
-            [
-                'attempts' => $notification->attempts_count,
-                'error' => $notification->last_error,
-            ]
-        );
+        Log::error('Уведомление не доставлено.', [
+            'notification_id' => $notification->id,
+            'user_id' => $notification->user_id,
+            'channel' => $notification->channel->value,
+            'attempts' => $notification->attempts_count,
+            'error' => $notification->last_error,
+        ]);
 
         $this->publishEvent(self::EVENT_FAILED, $notification);
     }

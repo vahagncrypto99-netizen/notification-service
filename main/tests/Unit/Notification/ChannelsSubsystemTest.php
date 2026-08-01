@@ -37,7 +37,7 @@ describe('почтовый канал', function () : void {
         app(EmailChannelSender::class)->send(channelMessage());
 
         Log::shouldHaveReceived('info')->withArgs(
-            fn (string $message) => str_contains($message, 'user-7@example.stub')
+            fn (string $message, array $context = []) => ($context['to_email'] ?? null) === 'user-7@example.stub'
         )->once();
     });
 
@@ -71,7 +71,7 @@ describe('telegram канал', function () : void {
         app(TelegramChannelSender::class)->send(channelMessage(1, 9, 'В телегу'));
 
         Log::shouldHaveReceived('info')->withArgs(
-            fn (string $message) => str_contains($message, 'user-9')
+            fn (string $message, array $context = []) => ($context['chat_id'] ?? null) === 'user-9'
         )->once();
     });
 
