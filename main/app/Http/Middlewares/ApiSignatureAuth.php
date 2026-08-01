@@ -55,9 +55,6 @@ class ApiSignatureAuth
         return $next($request);
     }
 
-    /**
-     * Ответ 401 без деталей — злоумышленнику не сообщаем, что именно не так.
-     */
     private function unauthenticated() : Response
     {
         return response()->json(['message' => 'Unauthenticated.'], 401);
