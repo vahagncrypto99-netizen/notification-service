@@ -6,7 +6,7 @@ namespace App\Services\Delivery\Mail;
 
 use App\Models\NotificationMailQueue;
 use App\Services\Delivery\Mail\Dto\SenderDto;
-use App\Services\Delivery\Mail\MailQueueRepository;
+use App\Services\Delivery\Mail\Repository\MailQueueRepository;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 

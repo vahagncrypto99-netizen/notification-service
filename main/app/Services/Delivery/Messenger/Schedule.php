@@ -6,7 +6,7 @@ namespace App\Services\Delivery\Messenger;
 
 use App\Models\NotificationMessengerQueue;
 use App\Services\Delivery\Messenger\Dto\SenderDto;
-use App\Services\Delivery\Messenger\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\Repository\MessengerQueueRepository;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 

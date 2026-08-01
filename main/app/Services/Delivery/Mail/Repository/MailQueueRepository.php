@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Delivery\Mail;
+namespace App\Services\Delivery\Mail\Repository;
 
 use App\Models\NotificationMailQueue;
 use App\Repository\Base;

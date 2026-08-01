@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Delivery\Messenger;
 
-use App\Services\Delivery\Messenger\MessengerQueueRepository;
+use App\Services\Delivery\Messenger\Repository\MessengerQueueRepository;
 use InvalidArgumentException;
 
 class MessengerResolver
