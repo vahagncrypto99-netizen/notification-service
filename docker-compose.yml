@@ -21,10 +21,13 @@ x-php-service: &php-service
   networks:
     - postgres_network
     - rabbitmq_network
+    - redis_network
   depends_on:
     postgres:
       condition: service_healthy
     rabbitmq:
+      condition: service_healthy
+    redis:
       condition: service_healthy
   logging: *default-logging
 
@@ -41,6 +44,7 @@ services:
       - app_network
       - postgres_network
       - rabbitmq_network
+      - redis_network
     healthcheck:
       test: [ "CMD-SHELL", "pgrep php-fpm" ]
       interval: 10s
@@ -92,6 +96,27 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    logging: *default-logging
+
+  # --------------------------------------------------------
+  # Redis (кэш, rate limiting)
+  # --------------------------------------------------------
+
+  redis:
+    container_name: ${COMPOSE_PROJECT_NAME}_redis
+    image: "redis:${REDIS_VERSION:-7-alpine}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - redis_data:/data
+    networks:
+      - redis_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     logging: *default-logging
 
   # --------------------------------------------------------
@@ -148,7 +173,9 @@ networks:
   app_network: { driver: bridge }
   postgres_network: { driver: bridge }
   rabbitmq_network: { driver: bridge }
+  redis_network: { driver: bridge }
 
 volumes:
   pg_data: { driver: local }
   rabbitmq_data: { driver: local }
+  redis_data: { driver: local }

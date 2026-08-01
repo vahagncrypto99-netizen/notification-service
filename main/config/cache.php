@@ -7,12 +7,12 @@ return [
     | Кэш
     |--------------------------------------------------------------------------
     |
-    | Сервису кэш почти не нужен: file — для локальной работы,
-    | array — для тестов. Отдельная кэш-инфраструктура не держится.
+    | Redis — кэш и счётчики rate limiting (разделяемое хранилище,
+    | переживает масштабирование инстансов); array — для тестов.
     |
     */
 
-    'default' => env('CACHE_STORE', 'file'),
+    'default' => env('CACHE_STORE', 'redis'),
 
     'stores' => [
 
@@ -25,6 +25,12 @@ return [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
             'lock_path' => storage_path('framework/cache/data'),
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
+            'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
     ],

@@ -25,12 +25,14 @@ RUN set -eux \
 
 # PHP-расширения — ровно те, что нужны сервису:
 # pdo_pgsql — Postgres; pcntl — сигналы/таймауты queue:work;
-# sockets — php-amqplib (RabbitMQ); opcache — производительность;
-# zip — установка composer-дистрибутивов.
+# sockets — php-amqplib (RabbitMQ); redis — кэш/rate limiting;
+# opcache — производительность; zip — composer-дистрибутивы.
 RUN set -eux \
     && apk add --no-cache libpq libzip \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers postgresql-dev libzip-dev \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql pcntl opcache sockets zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && apk del .build-deps \
     && rm -rf /usr/src/php* /tmp/pear
 
