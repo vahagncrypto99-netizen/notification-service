@@ -15,11 +15,7 @@ class ApiResponse
      */
     public static function success(string $message, int $code = 200, array $payload = []) : JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'payload' => $payload,
-        ], $code);
+        return self::respond(true, $message, $code, $payload);
     }
 
     /**
@@ -29,8 +25,18 @@ class ApiResponse
      */
     public static function error(string $message, int $code = 400, array $payload = []) : JsonResponse
     {
+        return self::respond(false, $message, $code, $payload);
+    }
+
+    /**
+     * Сборка JSON-ответа единого контракта.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private static function respond(bool $success, string $message, int $code, array $payload) : JsonResponse
+    {
         return response()->json([
-            'success' => false,
+            'success' => $success,
             'message' => $message,
             'payload' => $payload,
         ], $code);
