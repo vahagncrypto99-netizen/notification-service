@@ -20,7 +20,7 @@ describe('запрос генерации отчёта', function () : void {
             'period_to' => now()->toDateString(),
         ];
 
-        $response = $this->postJson('/api/reports', $payload, apiHeaders($payload));
+        $response = apiPost('/api/reports', $payload);
 
         $response->assertCreated()->assertJsonPath('data.status', 'pending');
 
@@ -34,7 +34,7 @@ describe('запрос генерации отчёта', function () : void {
             'period_to' => '2026-07-01',
         ];
 
-        $this->postJson('/api/reports', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['period_to']);
+        apiPost('/api/reports', $payload)->assertUnprocessable()->assertJsonValidationErrors(['period_to']);
     });
 
     it('отклоняет некорректные даты', function () : void {
@@ -44,7 +44,7 @@ describe('запрос генерации отчёта', function () : void {
             'period_to' => 'сегодня',
         ];
 
-        $this->postJson('/api/reports', $payload, apiHeaders($payload))->assertUnprocessable();
+        apiPost('/api/reports', $payload)->assertUnprocessable();
     });
 });
 
@@ -133,14 +133,14 @@ describe('статус и скачивание', function () : void {
     it('возвращает статус отчёта', function () : void {
         $report = NotificationReport::factory()->failed()->create();
 
-        $this->getJson("/api/reports/{$report->id}", apiHeaders())->assertOk()->assertJsonPath(
+        apiGet("/api/reports/{$report->id}")->assertOk()->assertJsonPath(
             'data.status',
             'failed'
         )->assertJsonPath('data.error', 'Simulated report generation failure.');
     });
 
     it('возвращает 404 для несуществующего отчёта', function () : void {
-        $this->getJson('/api/reports/999999', apiHeaders())->assertNotFound();
+        apiGet('/api/reports/999999')->assertNotFound();
     });
 
     it('отдаёт файл готового отчёта', function () : void {
@@ -150,7 +150,7 @@ describe('статус и скачивание', function () : void {
 
         $report = NotificationReport::factory()->done('reports/report_7.csv')->create();
 
-        $this->getJson("/api/reports/{$report->id}/download", apiHeaders())->assertOk()->assertDownload(
+        apiGet("/api/reports/{$report->id}/download")->assertOk()->assertDownload(
             "notification_report_{$report->id}.csv"
         );
     });
@@ -158,7 +158,7 @@ describe('статус и скачивание', function () : void {
     it('не отдаёт файл, пока отчёт не готов', function () : void {
         $report = NotificationReport::factory()->create();
 
-        $this->getJson("/api/reports/{$report->id}/download", apiHeaders())->assertStatus(409);
+        apiGet("/api/reports/{$report->id}/download")->assertStatus(409);
     });
 
     it('не отдаёт частичный файл упавшей генерации', function () : void {
@@ -168,6 +168,6 @@ describe('статус и скачивание', function () : void {
 
         $report = NotificationReport::factory()->failed()->create();
 
-        $this->getJson("/api/reports/{$report->id}/download", apiHeaders())->assertStatus(409);
+        apiGet("/api/reports/{$report->id}/download")->assertStatus(409);
     });
 });

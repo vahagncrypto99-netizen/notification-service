@@ -43,6 +43,8 @@ class ApiSignatureAuth
             token: $token,
             timestamp: $timestamp,
             signature: $signature,
+            method: $request->getMethod(),
+            uri: $request->getRequestUri(),
             body: $request->getContent(),
         ));
 

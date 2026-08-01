@@ -15,6 +15,8 @@ class RequestSignatureDto extends Data
         public readonly string $token,
         public readonly string $timestamp,
         public readonly string $signature,
+        public readonly string $method,
+        public readonly string $uri,
         public readonly string $body,
     ) {
         //

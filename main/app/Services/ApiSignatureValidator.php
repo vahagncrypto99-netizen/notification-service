@@ -9,15 +9,30 @@ use App\Dto\RequestSignatureDto;
 class ApiSignatureValidator
 {
     /**
+     * ApiSignatureValidator constructor.
+     *
+     * @param  array<string, string>  $clients  карта «токен → секрет подписи»
+     * @param  int  $signature_ttl  окно валидности timestamp, секунды
+     * @param  string  $signature_algo  алгоритм HMAC
+     */
+    public function __construct(
+        private readonly array $clients,
+        private readonly int $signature_ttl,
+        private readonly string $signature_algo,
+    ) {
+        //
+    }
+
+    /**
      * Проверка HMAC-подписи запроса.
      *
      * Bearer-токен идентифицирует сервис-клиент, подпись доказывает
      * владение его секретом (секрет по сети не передаётся):
      *
-     *   X-Signature = hmac_sha256(secret, timestamp . "." . body)
+     *   X-Signature = hmac(secret, METHOD \n URI \n TIMESTAMP \n BODY)
      *
-     * Окно валидности timestamp защищает от повторного проигрывания
-     * перехваченного запроса (replay).
+     * Подпись привязана к методу, пути с query, времени и телу — её нельзя
+     * переиспользовать для другого запроса; окно timestamp закрывает replay.
      */
     public function validate(RequestSignatureDto $dto) : bool
     {
@@ -28,8 +43,8 @@ class ApiSignatureValidator
         }
 
         $expected_signature = hash_hmac(
-            (string) config('auth.api.signature_algo'),
-            $dto->timestamp.'.'.$dto->body,
+            $this->signature_algo,
+            $this->canonicalString($dto),
             $secret
         );
 
@@ -37,11 +52,24 @@ class ApiSignatureValidator
     }
 
     /**
+     * Каноническая строка запроса — всё, что подпись обязана покрывать.
+     */
+    private function canonicalString(RequestSignatureDto $dto) : string
+    {
+        return implode("\n", [
+            strtoupper($dto->method),
+            $dto->uri,
+            $dto->timestamp,
+            $dto->body,
+        ]);
+    }
+
+    /**
      * Секрет подписи для предъявленного токена (timing-safe поиск).
      */
     private function secretForToken(string $provided_token) : ?string
     {
-        foreach ($this->clients() as $token => $secret) {
+        foreach ($this->clients as $token => $secret) {
             if (hash_equals($token, $provided_token)) {
                 return $secret;
             }
@@ -59,32 +87,6 @@ class ApiSignatureValidator
             return false;
         }
 
-        $ttl = (int) config('auth.api.signature_ttl');
-
-        return abs(time() - (int) $timestamp) <= $ttl;
-    }
-
-    /**
-     * Карта «токен → секрет подписи» из конфигурации.
-     *
-     * @return array<string, string>
-     */
-    private function clients() : array
-    {
-        $raw = (string) config('auth.api.clients', '');
-
-        $clients = [];
-
-        foreach (array_filter(array_map('trim', explode(',', $raw))) as $pair) {
-            if (! str_contains($pair, ':')) {
-                continue;
-            }
-
-            [$token, $secret] = explode(':', $pair, 2);
-
-            $clients[$token] = $secret;
-        }
-
-        return $clients;
+        return abs(time() - (int) $timestamp) <= $this->signature_ttl;
     }
 }

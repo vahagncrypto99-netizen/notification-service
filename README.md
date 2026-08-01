@@ -20,6 +20,6 @@ make setup
 
 Дальше:
 
-- API — `http://localhost/api/...`; аутентификация s2s: `Authorization: Bearer <token>` + HMAC-подпись запроса (`X-Timestamp`, `X-Signature = hmac_sha256(secret, timestamp . "." . body)`), пары `token:secret` — в `API_AUTH_CLIENTS` (`main/.env`)
+- API — `http://localhost/api/...`; аутентификация s2s: `Authorization: Bearer <token>` + HMAC-подпись канонического запроса (`X-Timestamp`, `X-Signature = hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n BODY)`), пары `token:secret` — в `API_AUTH_CLIENTS` (`main/.env`)
 - Проверки качества — `make check` (тесты + PHPStan + Pint)
 - Логи — `make logs`, RabbitMQ UI — `http://localhost:15672` (креды в корневом `.env`)

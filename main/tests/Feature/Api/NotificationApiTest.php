@@ -18,7 +18,7 @@ describe('создание уведомления', function () : void {
             'channel' => 'email',
         ];
 
-        $response = $this->postJson('/api/notifications', $payload, apiHeaders($payload));
+        $response = apiPost('/api/notifications', $payload);
 
         $response->assertCreated()->assertJsonPath('data.status', 'processing')->assertJsonPath(
             'data.user_id',
@@ -42,7 +42,7 @@ describe('создание уведомления', function () : void {
             'channel' => 'email',
         ];
 
-        $this->postJson('/api/notifications', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['message']);
+        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['message']);
 
         expect(Notification::query()->count())->toBe(0);
     });
@@ -54,11 +54,11 @@ describe('создание уведомления', function () : void {
             'channel' => 'sms',
         ];
 
-        $this->postJson('/api/notifications', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['channel']);
+        apiPost('/api/notifications', $payload)->assertUnprocessable()->assertJsonValidationErrors(['channel']);
     });
 
     it('отклоняет запрос без обязательных полей', function () : void {
-        $this->postJson('/api/notifications', [], apiHeaders([]))->assertUnprocessable()->assertJsonValidationErrors([
+        apiPost('/api/notifications', [])->assertUnprocessable()->assertJsonValidationErrors([
             'message',
             'user_id',
             'channel',
@@ -70,14 +70,14 @@ describe('статус уведомления', function () : void {
     it('возвращает уведомление по id', function () : void {
         $notification = Notification::factory()->sent()->create();
 
-        $this->getJson("/api/notifications/{$notification->id}", apiHeaders())->assertOk()->assertJsonPath(
+        apiGet("/api/notifications/{$notification->id}")->assertOk()->assertJsonPath(
             'data.id',
             $notification->id
         )->assertJsonPath('data.status', 'sent');
     });
 
     it('возвращает 404 для несуществующего уведомления', function () : void {
-        $this->getJson('/api/notifications/999999', apiHeaders())->assertNotFound();
+        apiGet('/api/notifications/999999')->assertNotFound();
     });
 });
 
@@ -86,7 +86,7 @@ describe('история уведомлений', function () : void {
         Notification::factory()->count(3)->create(['user_id' => 1]);
         Notification::factory()->count(2)->create(['user_id' => 2]);
 
-        $this->getJson('/api/notifications?user_id=1', apiHeaders())->assertOk()->assertJsonCount(
+        apiGet('/api/notifications?user_id=1')->assertOk()->assertJsonCount(
             3,
             'data'
         );
@@ -96,7 +96,7 @@ describe('история уведомлений', function () : void {
         Notification::factory()->count(2)->create(['user_id' => 1]);
         Notification::factory()->failed()->create(['user_id' => 1]);
 
-        $response = $this->getJson('/api/notifications?user_id=1&status=failed', apiHeaders());
+        $response = apiGet('/api/notifications?user_id=1&status=failed');
 
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.status', 'failed');
     });
@@ -105,7 +105,7 @@ describe('история уведомлений', function () : void {
         Notification::factory()->channel(ChannelEnum::Email)->count(2)->create(['user_id' => 1]);
         Notification::factory()->channel(ChannelEnum::Telegram)->create(['user_id' => 1]);
 
-        $response = $this->getJson('/api/notifications?user_id=1&channel=telegram', apiHeaders());
+        $response = apiGet('/api/notifications?user_id=1&channel=telegram');
 
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.channel', 'telegram');
     });
@@ -115,10 +115,7 @@ describe('история уведомлений', function () : void {
         Notification::factory()->channel(ChannelEnum::Email)->failed()->create(['user_id' => 1]);
         Notification::factory()->channel(ChannelEnum::Telegram)->sent()->create(['user_id' => 1]);
 
-        $response = $this->getJson(
-            '/api/notifications?user_id=1&channel=email&status=sent',
-            apiHeaders()
-        );
+        $response = apiGet('/api/notifications?user_id=1&channel=email&status=sent');
 
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath(
             'data.0.channel',
@@ -127,13 +124,13 @@ describe('история уведомлений', function () : void {
     });
 
     it('отклоняет невалидные значения фильтров', function () : void {
-        $this->getJson('/api/notifications?user_id=1&status=unknown', apiHeaders())->assertUnprocessable();
+        apiGet('/api/notifications?user_id=1&status=unknown')->assertUnprocessable();
 
-        $this->getJson('/api/notifications?user_id=1&channel=sms', apiHeaders())->assertUnprocessable();
+        apiGet('/api/notifications?user_id=1&channel=sms')->assertUnprocessable();
     });
 
     it('требует user_id', function () : void {
-        $this->getJson('/api/notifications', apiHeaders())->assertUnprocessable()->assertJsonValidationErrors([
+        apiGet('/api/notifications')->assertUnprocessable()->assertJsonValidationErrors([
             'user_id',
         ]);
     });
@@ -146,7 +143,7 @@ it('создание уведомления переживает полный ц
         'channel' => 'telegram',
     ];
 
-    $response = $this->postJson('/api/notifications', $payload, apiHeaders($payload));
+    $response = apiPost('/api/notifications', $payload);
 
     $response->assertCreated();
 
