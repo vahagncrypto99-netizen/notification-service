@@ -21,10 +21,6 @@ class ApiSignatureValidator
      */
     public function validate(RequestSignatureDto $dto) : bool
     {
-        if ($dto->token === null || $dto->timestamp === null || $dto->signature === null) {
-            return false;
-        }
-
         $secret = $this->secretForToken($dto->token);
 
         if ($secret === null || ! $this->isFreshTimestamp($dto->timestamp)) {

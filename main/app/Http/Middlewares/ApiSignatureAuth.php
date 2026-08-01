@@ -27,20 +27,37 @@ class ApiSignatureAuth
      */
     public function handle(Request $request, Closure $next) : Response
     {
+        $token = $request->bearerToken();
+        $timestamp = $request->header('X-Timestamp');
+        $signature = $request->header('X-Signature');
+
+        /**
+         * Неполный набор заголовков отсекается до создания DTO —
+         * валидатор всегда получает полные данные подписи.
+         */
+        if ($token === null || $timestamp === null || $signature === null) {
+            return $this->unauthenticated();
+        }
+
         $valid = $this->signature_validator->validate(new RequestSignatureDto(
-            token: $request->bearerToken(),
-            timestamp: $request->header('X-Timestamp'),
-            signature: $request->header('X-Signature'),
+            token: $token,
+            timestamp: $timestamp,
+            signature: $signature,
             body: $request->getContent(),
         ));
 
         if (! $valid) {
-            /**
-             * Без деталей — злоумышленнику не сообщаем, что именно не так.
-             */
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return $this->unauthenticated();
         }
 
         return $next($request);
+    }
+
+    /**
+     * Ответ 401 без деталей — злоумышленнику не сообщаем, что именно не так.
+     */
+    private function unauthenticated() : Response
+    {
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
 }
