@@ -12,11 +12,13 @@ describe('создание уведомления', function () : void {
     it('создаёт уведомление в статусе processing и ставит джобу отправки', function () : void {
         Queue::fake();
 
-        $response = $this->postJson('/api/notifications', [
+        $payload = [
             'message' => 'Тестовое уведомление',
             'user_id' => 42,
             'channel' => 'email',
-        ], apiHeaders());
+        ];
+
+        $response = $this->postJson('/api/notifications', $payload, apiHeaders($payload));
 
         $response->assertCreated()->assertJsonPath('data.status', 'processing')->assertJsonPath(
             'data.user_id',
@@ -34,25 +36,29 @@ describe('создание уведомления', function () : void {
     });
 
     it('отклоняет сообщение длиннее 500 символов', function () : void {
-        $this->postJson('/api/notifications', [
+        $payload = [
             'message' => str_repeat('а', 501),
             'user_id' => 42,
             'channel' => 'email',
-        ], apiHeaders())->assertUnprocessable()->assertJsonValidationErrors(['message']);
+        ];
+
+        $this->postJson('/api/notifications', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['message']);
 
         expect(Notification::query()->count())->toBe(0);
     });
 
     it('отклоняет неизвестный канал', function () : void {
-        $this->postJson('/api/notifications', [
+        $payload = [
             'message' => 'Привет',
             'user_id' => 42,
             'channel' => 'sms',
-        ], apiHeaders())->assertUnprocessable()->assertJsonValidationErrors(['channel']);
+        ];
+
+        $this->postJson('/api/notifications', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['channel']);
     });
 
     it('отклоняет запрос без обязательных полей', function () : void {
-        $this->postJson('/api/notifications', [], apiHeaders())->assertUnprocessable()->assertJsonValidationErrors([
+        $this->postJson('/api/notifications', [], apiHeaders([]))->assertUnprocessable()->assertJsonValidationErrors([
             'message',
             'user_id',
             'channel',
@@ -134,11 +140,13 @@ describe('история уведомлений', function () : void {
 });
 
 it('создание уведомления переживает полный цикл на sync-очереди', function () : void {
-    $response = $this->postJson('/api/notifications', [
+    $payload = [
         'message' => 'Сквозная проверка',
         'user_id' => 7,
         'channel' => 'telegram',
-    ], apiHeaders());
+    ];
+
+    $response = $this->postJson('/api/notifications', $payload, apiHeaders($payload));
 
     $response->assertCreated();
 

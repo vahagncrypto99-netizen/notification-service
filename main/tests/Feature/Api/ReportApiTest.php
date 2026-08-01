@@ -14,11 +14,13 @@ describe('запрос генерации отчёта', function () : void {
     it('создаёт отчёт в статусе pending и ставит джобу генерации', function () : void {
         Queue::fake();
 
-        $response = $this->postJson('/api/reports', [
+        $payload = [
             'user_id' => 42,
             'period_from' => now()->subMonth()->toDateString(),
             'period_to' => now()->toDateString(),
-        ], apiHeaders());
+        ];
+
+        $response = $this->postJson('/api/reports', $payload, apiHeaders($payload));
 
         $response->assertCreated()->assertJsonPath('data.status', 'pending');
 
@@ -26,19 +28,23 @@ describe('запрос генерации отчёта', function () : void {
     });
 
     it('отклоняет период, где period_to раньше period_from', function () : void {
-        $this->postJson('/api/reports', [
+        $payload = [
             'user_id' => 42,
             'period_from' => '2026-08-01',
             'period_to' => '2026-07-01',
-        ], apiHeaders())->assertUnprocessable()->assertJsonValidationErrors(['period_to']);
+        ];
+
+        $this->postJson('/api/reports', $payload, apiHeaders($payload))->assertUnprocessable()->assertJsonValidationErrors(['period_to']);
     });
 
     it('отклоняет некорректные даты', function () : void {
-        $this->postJson('/api/reports', [
+        $payload = [
             'user_id' => 42,
             'period_from' => 'вчера',
             'period_to' => 'сегодня',
-        ], apiHeaders())->assertUnprocessable();
+        ];
+
+        $this->postJson('/api/reports', $payload, apiHeaders($payload))->assertUnprocessable();
     });
 });
 
@@ -144,7 +150,7 @@ describe('статус и скачивание', function () : void {
 
         $report = NotificationReport::factory()->done('reports/report_7.csv')->create();
 
-        $this->get("/api/reports/{$report->id}/download", apiHeaders())->assertOk()->assertDownload(
+        $this->getJson("/api/reports/{$report->id}/download", apiHeaders())->assertOk()->assertDownload(
             "notification_report_{$report->id}.csv"
         );
     });

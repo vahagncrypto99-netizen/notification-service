@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middlewares\ApiTokenAuth;
+use App\Http\Middlewares\ApiSignatureAuth;
 use App\Providers\EventServiceProvider;
 use App\Schedule\Schedule;
 use Illuminate\Foundation\Application;
@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))->withRouting(
     EventServiceProvider::class,
 ])->withMiddleware(function (Middleware $middleware) {
     $middleware->api(append: [
-        ApiTokenAuth::class,
+        ApiSignatureAuth::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     Integration::handles($exceptions);
