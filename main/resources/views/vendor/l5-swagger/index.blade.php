@@ -139,8 +139,38 @@
             validatorUrl: {!! isset($validatorUrl) ? '"' . $validatorUrl . '"' : 'null' !!},
             oauth2RedirectUrl: "{{ route('l5-swagger.'.$documentation.'.oauth2_callback', [], $useAbsolutePath) }}",
 
-            requestInterceptor: function(request) {
+            requestInterceptor: async function(request) {
                 request.headers['X-CSRF-TOKEN'] = '{{ csrf_token() }}';
+
+                /*
+                 * HMAC-подпись для Try it out: в Authorize в поле
+                 * X-Signature вводится SIGNING SECRET клиента —
+                 * интерцептор сам считает подпись канонического запроса
+                 * и подставляет актуальный X-Timestamp.
+                 */
+                const secret = request.headers['X-Signature'];
+
+                if (secret) {
+                    const url = new URL(request.url, window.location.origin);
+                    const uri = url.pathname + url.search;
+                    const method = (request.method || 'GET').toUpperCase();
+                    const body = typeof request.body === 'string' ? request.body : '';
+                    const timestamp = String(Math.floor(Date.now() / 1000));
+
+                    const canonical = [method, uri, timestamp, body].join('\n');
+
+                    const key = await crypto.subtle.importKey(
+                        'raw', new TextEncoder().encode(secret),
+                        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+                    );
+                    const digest = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(canonical));
+                    const signature = Array.from(new Uint8Array(digest))
+                        .map(b => b.toString(16).padStart(2, '0')).join('');
+
+                    request.headers['X-Timestamp'] = timestamp;
+                    request.headers['X-Signature'] = signature;
+                }
+
                 return request;
             },
 

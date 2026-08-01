@@ -771,13 +771,13 @@
             },
             "request_timestamp": {
                 "type": "apiKey",
-                "description": "Unix-время запроса; окно валидности — API_SIGNATURE_TTL секунд (replay-защита).",
+                "description": "Unix-время запроса; окно валидности — API_SIGNATURE_TTL секунд (replay-защита). В Swagger UI можно оставить пустым: интерцептор подставит текущее время автоматически.",
                 "name": "X-Timestamp",
                 "in": "header"
             },
             "request_signature": {
                 "type": "apiKey",
-                "description": "HMAC-подпись канонического запроса: hmac_sha256(secret, METHOD \\n URI \\n TIMESTAMP \\n BODY).",
+                "description": "HMAC-подпись канонического запроса: hmac_sha256(secret, METHOD \\n URI \\n TIMESTAMP \\n BODY). В Swagger UI введите сюда SIGNING SECRET клиента (например local-dev-secret) — интерцептор сам вычислит подпись для каждого запроса.",
                 "name": "X-Signature",
                 "in": "header"
             }

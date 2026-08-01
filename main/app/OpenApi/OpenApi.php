@@ -23,14 +23,14 @@ use OpenApi\Attributes as OA;
     type: 'apiKey',
     in: 'header',
     name: 'X-Timestamp',
-    description: 'Unix-время запроса; окно валидности — API_SIGNATURE_TTL секунд (replay-защита).'
+    description: 'Unix-время запроса; окно валидности — API_SIGNATURE_TTL секунд (replay-защита). В Swagger UI можно оставить пустым: интерцептор подставит текущее время автоматически.'
 )]
 #[OA\SecurityScheme(
     securityScheme: 'request_signature',
     type: 'apiKey',
     in: 'header',
     name: 'X-Signature',
-    description: 'HMAC-подпись канонического запроса: hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n BODY).'
+    description: 'HMAC-подпись канонического запроса: hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n BODY). В Swagger UI введите сюда SIGNING SECRET клиента (например local-dev-secret) — интерцептор сам вычислит подпись для каждого запроса.'
 )]
 #[OA\Schema(
     schema: 'ApiError',
