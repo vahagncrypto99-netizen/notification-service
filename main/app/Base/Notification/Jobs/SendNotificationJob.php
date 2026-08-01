@@ -99,6 +99,10 @@ class SendNotificationJob extends Queue
              * ретраи бессмысленны, уведомление гасится сразу.
              */
             if ($repository->markAsFailed($notification->id, $exception->getMessage())) {
+                /**
+                 * БД уже обновлена условным UPDATE выше — здесь только
+                 * синхронизация модели в памяти для payload события.
+                 */
                 $notification->setStatus(NotificationStatusEnum::Failed);
                 $notification->last_error = $exception->getMessage();
 
@@ -118,6 +122,10 @@ class SendNotificationJob extends Queue
         }
 
         if ($repository->markAsSent($notification->id)) {
+            /**
+             * БД уже обновлена условным UPDATE выше — здесь только
+             * синхронизация модели в памяти для payload события.
+             */
             $notification->setStatus(NotificationStatusEnum::Sent);
 
             NotificationSent::dispatch($notification);
@@ -140,6 +148,10 @@ class SendNotificationJob extends Queue
         }
 
         if ($repository->markAsFailed($notification->id, $exception?->getMessage())) {
+            /**
+             * БД уже обновлена условным UPDATE выше — здесь только
+             * синхронизация модели в памяти для payload события.
+             */
             $notification->setStatus(NotificationStatusEnum::Failed);
             $notification->last_error = $exception?->getMessage();
 
