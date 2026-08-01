@@ -15,9 +15,9 @@ ARG UID=1000
 ARG GID=1000
 
 # Системные пакеты — только необходимое:
-# bash — шелл для make exec; git — composer ставит vahagn/to-log из VCS-репозитория.
+# bash — шелл для make exec.
 RUN set -eux \
-    && apk add --no-cache bash git \
+    && apk add --no-cache bash \
     && apk add --no-cache --virtual .tz tzdata \
     && cp /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo "${TZ}" > /etc/timezone \

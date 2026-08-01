@@ -11,15 +11,21 @@ CONTAINER ?= app
 # Второй goal после основной цели (например: make exec worker -> "worker")
 ARG := $(word 2,$(MAKECMDGOALS))
 
-# Первый запуск проекта с нуля: env-файлы, сборка, зависимости, миграции
+# Первый запуск проекта с нуля: env-файлы, сборка, зависимости, миграции.
+# Воркер и планировщик стартуют после composer install — иначе на чистой
+# машине они крутятся в crash-loop, пока не появится vendor/.
 setup:
 	@test -f .env || (cp .env.example .env && echo "→ создан .env")
 	@test -f main/.env || (cp main/.env.example main/.env && echo "→ создан main/.env")
+	@if [ "$$(uname)" = "Linux" ]; then \
+		sed -i "s/^UID=.*/UID=$$(id -u)/; s/^GID=.*/GID=$$(id -g)/" .env; \
+	fi
 	$(DC) build
-	$(DC) up -d
+	$(DC) up -d postgres rabbitmq redis app nginx
 	$(DC) exec -T app composer install
 	@grep -q '^APP_KEY=.\+' main/.env || $(DC) exec -T app php artisan key:generate --force
 	$(DC) exec -T app php artisan migrate --force
+	$(DC) up -d
 	@echo "→ Готово: http://localhost/api (RabbitMQ UI: http://localhost:15672)"
 
 # Перегенерация OpenAPI-документации (коммитится в репозиторий)

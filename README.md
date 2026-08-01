@@ -11,7 +11,8 @@ PHP 8.3 · Laravel 12 · PostgreSQL · RabbitMQ · Redis · Docker (compose) · 
 Нужны только Docker и Docker Compose.
 
 ```bash
-git clone git@github.com:vahagncrypto99-netizen/notification-service.git
+git clone https://github.com/vahagncrypto99-netizen/notification-service.git
+# или по SSH: git clone git@github.com:vahagncrypto99-netizen/notification-service.git
 cd notification-service
 make setup
 ```
@@ -20,7 +21,7 @@ make setup
 
 Дальше:
 
-- API — `http://localhost/api/...`; аутентификация s2s: `Authorization: Bearer <token>` + HMAC-подпись канонического запроса (`X-Timestamp`, `X-Signature = hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n BODY)`), пары `token:secret` — в `API_AUTH_CLIENTS` (`main/.env`)
+- API — `http://localhost/api/...`; аутентификация s2s: `Authorization: Bearer <token>` + HMAC-подпись канонического запроса (`X-Timestamp`, `X-Nonce` — одноразовый, `X-Signature = hmac_sha256(secret, METHOD \n URI \n TIMESTAMP \n NONCE \n BODY)`), пары `token:secret` — в `API_AUTH_CLIENTS` (`main/.env`)
 - Health — `http://localhost/api/health` (БД, брокер, кэш; без подписи)
 - Swagger UI — `http://localhost/api/documentation` (OpenAPI 3, PHP-атрибуты swagger-php; перегенерация — `make docs`)
 - Проверки качества — `make check` (тесты + PHPStan + Pint)
@@ -49,21 +50,22 @@ make setup
 1. Нажмите **Authorize** и заполните:
    - `bearer_token` → `local-dev-token`
    - `request_signature` (X-Signature) → `local-dev-secret` — **вводится signing secret, не подпись**
-   - `request_timestamp` — можно оставить пустым
+   - `request_timestamp` и `request_nonce` — можно оставить пустыми
 2. **Try it out** на любом эндпоинте → Execute.
 
-UI сам подписывает каждый запрос: интерцептор считает HMAC канонического запроса через Web Crypto и подставляет свежий timestamp. Значения кредов — из `API_AUTH_CLIENTS` в `main/.env` (пары `token:secret`).
+UI сам подписывает каждый запрос: интерцептор считает HMAC канонического запроса через Web Crypto, подставляет свежий timestamp и одноразовый nonce. Значения кредов — из `API_AUTH_CLIENTS` в `main/.env` (пары `token:secret`).
 
 **Через curl** (подпись считается по той же формуле):
 
 ```bash
-TS=$(date +%s); BODY='{"message":"Привет","user_id":1,"channel":"email"}'
-SIG=$(printf 'POST\n/api/notifications\n%s\n%s' "$TS" "$BODY" | \
+TS=$(date +%s); NONCE=$(uuidgen)
+BODY='{"message":"Привет","user_id":1,"channel":"email"}'
+SIG=$(printf 'POST\n/api/notifications\n%s\n%s\n%s' "$TS" "$NONCE" "$BODY" | \
       openssl dgst -sha256 -hmac local-dev-secret | awk '{print $2}')
 
 curl -X POST http://localhost/api/notifications \
   -H "Authorization: Bearer local-dev-token" \
-  -H "X-Timestamp: $TS" -H "X-Signature: $SIG" \
+  -H "X-Timestamp: $TS" -H "X-Nonce: $NONCE" -H "X-Signature: $SIG" \
   -H "Content-Type: application/json" -d "$BODY"
 ```
 
@@ -72,12 +74,12 @@ curl -X POST http://localhost/api/notifications \
 ## Архитектурные решения
 
 - `app/Base/Notification` — домен (статусы, ретраи, отчёты, события); `app/Services/Delivery` — доставка (очереди каналов, фабрика сендеров, крон-отправка, троттлинг Telegram). Связаны через `ChannelSenderInterface`: новый канал — класс + строчка в конфиге.
-- Источник истины — БД. Уведомление создаётся в `processing`, доставляется джобой (5 ретраев с backoff), терминальный сбой — `failed`. Зависшие джобы добирает watchdog-крон; переходы статусов — условными UPDATE.
-- Очереди — RabbitMQ (durable, ack после обработки, DLX-ретраи). Redis — кэш и счётчики rate limiting.
+- Источник истины — БД, контур доставки замкнут. Уведомление создаётся в `processing`; RabbitMQ-джоба (5 ретраев с backoff) ставит его во внутреннюю очередь канала, а `sent`/`failed` выставляет крон-отправка канала (свои 5 попыток) — только по фактическому исходу. Постановка в канал идемпотентна по `notification_id`, переходы статусов — условными UPDATE, зависшие уведомления и отчёты добирают watchdog-кроны.
+- Очереди — RabbitMQ (durable, ack после обработки, DLX-ретраи). Redis — кэш, nonce-хранилище и счётчики rate limiting.
 - Все ответы API — `{success, message, payload}`, включая 422/401/429/500. Контроллеры тонкие: DTO → Manager → ApiResponse; неожиданные сбои — лог + Sentry.
 - Валидация — в Spatie-DTO (`validateAndCreate`): вход проверяется до бизнес-логики, по слоям идёт типизированный объект.
 - Отчёты: генерация во временный файл + атомарный rename, `done` — только после переноса. Агрегация — один SQL по покрывающему индексу `(user_id, created_at) INCLUDE (channel, status)`.
-- События `notification.sent` / `notification.failed` публикуются версионированным конвертом в fanout-exchange RabbitMQ.
+- События `notification.sent` / `notification.failed` публикуются версионированным конвертом в fanout-exchange RabbitMQ (отдельный AMQP-канал). Публикация — best-effort: сбой логируется и репортится, доставку не блокирует; строгий outbox — в продакшн-плане.
 - Инфраструктура: один процесс — один контейнер, alpine-образ ~99 MB, порты только на 127.0.0.1, non-root, `no-new-privileges`, healthcheck у каждого сервиса, отдельная тестовая БД.
 
 ## Что бы я улучшил в продакшне

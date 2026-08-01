@@ -1,8 +1,8 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
-  "name": "laravel/laravel",
+  "name": "vahagn/notification-service",
   "type": "project",
-  "description": "The skeleton application for the Laravel framework.",
+  "description": "Сервис уведомлений: REST API, асинхронная доставка в каналы с гарантией, отчёты.",
   "keywords": [
     "laravel",
     "framework"

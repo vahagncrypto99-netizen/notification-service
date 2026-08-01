@@ -3,7 +3,6 @@
     "rules": {
         "return_type_declaration": {
             "space_before": "one"
-        },
-        "no_unused_imports": false
+        }
     }
 }

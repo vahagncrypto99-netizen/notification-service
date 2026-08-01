@@ -156,8 +156,9 @@
                     const method = (request.method || 'GET').toUpperCase();
                     const body = typeof request.body === 'string' ? request.body : '';
                     const timestamp = String(Math.floor(Date.now() / 1000));
+                    const nonce = crypto.randomUUID();
 
-                    const canonical = [method, uri, timestamp, body].join('\n');
+                    const canonical = [method, uri, timestamp, nonce, body].join('\n');
 
                     const key = await crypto.subtle.importKey(
                         'raw', new TextEncoder().encode(secret),
@@ -168,6 +169,7 @@
                         .map(b => b.toString(16).padStart(2, '0')).join('');
 
                     request.headers['X-Timestamp'] = timestamp;
+                    request.headers['X-Nonce'] = nonce;
                     request.headers['X-Signature'] = signature;
                 }
 
