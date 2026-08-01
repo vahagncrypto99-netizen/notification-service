@@ -22,8 +22,7 @@ abstract class Sender implements MailSenderInterface
     }
 
     /**
-     * Отправка письма: валидация адреса → очередь канала или прямая
-     * отправка конкретным сендером (template method).
+     * Отправка письма.
      */
     public function send(SenderDto $data) : void
     {
