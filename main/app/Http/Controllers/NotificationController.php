@@ -80,14 +80,11 @@ class NotificationController extends Controller
                 NotificationHistoryDto::validateAndCreate($request->query())
             );
 
-            return ApiResponse::success('История уведомлений.', 200, [
-                'notifications' => NotificationResource::collection($history->items()),
-                'pagination' => [
-                    'current_page' => $history->currentPage(),
-                    'per_page' => $history->perPage(),
-                    'total' => $history->total(),
-                ],
-            ]);
+            return ApiResponse::success(
+                'История уведомлений.',
+                200,
+                NotificationResource::paginateCollection($history)
+            );
         } catch (ValidationException $exception) {
             return ApiResponse::error('Ошибка валидации.', 422, ['errors' => $exception->errors()]);
         } catch (OperationException $exception) {
