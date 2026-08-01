@@ -1,0 +1,84 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Notifications\SenderServices\Telegram;
+
+use App\Services\Notifications\Channels\Messenger\Dto\ResponseDto;
+use App\Services\Notifications\Channels\Messenger\Dto\SenderDto;
+use App\Services\Notifications\Contracts\MessengerSender;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use RuntimeException;
+use Throwable;
+
+class Telegram implements MessengerSender
+{
+    /**
+     * Название ключа rate limiter-а.
+     */
+    protected const RATE_LIMITER_KEY = 'telegram_api_sender';
+
+    /**
+     * Ограничение количества запросов к API в секунду (лимит Telegram: 30 msg/sec).
+     */
+    protected const LIMIT_REQUEST_TO_API_PER_SECOND = 30;
+
+    /**
+     * Интервал ожидания при превышении лимита, секунды.
+     */
+    protected const RATE_LIMIT_SLEEP_SECONDS = 1;
+
+    /**
+     * Время жизни записи в лимитере, секунды.
+     */
+    protected const RATE_LIMITER_DECAY_SECONDS = 1;
+
+    /**
+     * Отправка сообщения в Telegram.
+     *
+     * По условию задания реальной отправки нет: вместо вызова Bot API
+     * (POST sendMessage) сообщение фиксируется в логе. Механика боевой
+     * реализации сохранена: троттлинг под лимит API и контракт ответа
+     * (заблокировал бота → отписка, 429/5xx → повторная попытка).
+     */
+    public function send(SenderDto $data) : ResponseDto
+    {
+        try {
+            $this->enforceApiLimit();
+
+            if (config('notification.simulate_failures')) {
+                throw new RuntimeException('Симулированный сбой отправки в Telegram.');
+            }
+
+            Log::info("[telegram] Сообщение отправлено в чат {$data->chat_id}.", [
+                'message' => $data->message,
+            ]);
+
+            return ResponseDto::success();
+        } catch (Throwable $exception) {
+            Log::error(
+                "Ошибка отправки Telegram сообщения. Chat ID: {$data->chat_id}.",
+                ['error' => $exception->getMessage()]
+            );
+
+            return ResponseDto::error($exception->getMessage(), false, true);
+        }
+    }
+
+    // ****************************************************************
+    // *************************** Support ****************************
+    // ****************************************************************
+
+    /**
+     * Ожидание снятия лимита API (если превышен) и инкремент счётчика.
+     */
+    protected function enforceApiLimit() : void
+    {
+        while (RateLimiter::tooManyAttempts(self::RATE_LIMITER_KEY, self::LIMIT_REQUEST_TO_API_PER_SECOND)) {
+            sleep(self::RATE_LIMIT_SLEEP_SECONDS);
+        }
+
+        RateLimiter::hit(self::RATE_LIMITER_KEY, self::RATE_LIMITER_DECAY_SECONDS);
+    }
+}

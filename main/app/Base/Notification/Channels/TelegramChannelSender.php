@@ -5,25 +5,36 @@ declare(strict_types=1);
 namespace App\Base\Notification\Channels;
 
 use App\Base\Notification\Dto\ChannelMessageDto;
-use Illuminate\Support\Facades\Log;
+use App\Services\Notifications\Channels\Messenger\Messenger;
+use App\Services\Notifications\Repositories\MessengerQueueRepository;
 use RuntimeException;
 
 class TelegramChannelSender implements ChannelSenderInterface
 {
     /**
-     * Имитация отправки в Telegram: реальной интеграции нет — только лог.
+     * TelegramChannelSender constructor.
+     */
+    public function __construct(
+        private readonly MessengerQueueRepository $messenger_queue,
+    ) {
+        //
+    }
+
+    /**
+     * Передача уведомления в очередь Telegram: отправку выполняет крон
+     * через клиент Bot API с троттлингом под лимит Telegram. Chat ID
+     * в реальной системе брался бы из привязки аккаунта пользователя.
      */
     public function send(ChannelMessageDto $message) : void
     {
         if (config('notification.simulate_failures')) {
-            throw new RuntimeException(
-                'Симулированный сбой отправки в Telegram.'
-            );
+            throw new RuntimeException('Симулированный сбой отправки в Telegram.');
         }
 
-        Log::info(
-            "Telegram-уведомление #{$message->notification_id} отправлено пользователю {$message->user_id}.",
-            ['message' => $message->message]
+        $this->messenger_queue->addMail(
+            Messenger::TELEGRAM,
+            "user-{$message->user_id}",
+            $message->message
         );
     }
 }

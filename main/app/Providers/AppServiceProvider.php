@@ -13,6 +13,8 @@ use App\Services\EventPublisher\EventEnvelopeFactory;
 use App\Services\EventPublisher\EventPublisherInterface;
 use App\Services\EventPublisher\NullEventPublisher;
 use App\Services\EventPublisher\RabbitMqEventPublisher;
+use App\Services\Notifications\Channels\Messenger\MessengerResolver;
+use App\Services\Notifications\Notification as NotificationSubsystem;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
@@ -30,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ChannelSenderResolver::class);
         $this->app->singleton(ReportFormatterResolver::class);
+        $this->app->singleton(NotificationSubsystem::class);
+
+        $this->app->singleton(MessengerResolver::class, function () {
+            return new MessengerResolver((array) config('app_notifications.messengers'));
+        });
 
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
             return new ReportFileStorage(
