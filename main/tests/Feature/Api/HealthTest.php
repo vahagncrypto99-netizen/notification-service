@@ -30,3 +30,7 @@ it('отвечает 503, когда зависимость нездорова',
         'message' => 'Сервис нездоров.',
     ])->assertJsonPath('payload.checks.queue', false);
 });
+
+it('главная страница редиректит на документацию', function () : void {
+    $this->get('/')->assertRedirect('/api/documentation');
+});
