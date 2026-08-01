@@ -14,6 +14,7 @@ class RequestSignatureDto extends Data
     public function __construct(
         public readonly string $token,
         public readonly string $timestamp,
+        public readonly string $nonce,
         public readonly string $signature,
         public readonly string $method,
         public readonly string $uri,

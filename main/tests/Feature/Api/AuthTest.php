@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Notification;
+use App\Services\ApiSignatureValidator;
 
 it('отклоняет запрос без заголовков аутентификации', function () : void {
     $this->getJson('/api/notifications?user_id=1')->assertUnauthorized()->assertJson([
@@ -94,7 +95,35 @@ it('пропускает каждого из настроенных клиент
 it('отклоняет отозванного клиента', function () : void {
     config(['auth.api.clients' => 'brand-new-token:brand-new-secret']);
 
+    /**
+     * Валидатор — singleton, собранный из конфига на старте:
+     * смена конфига в тесте требует пересборки.
+     */
+    app()->forgetInstance(ApiSignatureValidator::class);
+
     apiGet('/api/notifications?user_id=1')->assertUnauthorized();
+});
+
+it('отклоняет повтор уже принятой подписи (replay)', function () : void {
+    $uri = '/api/notifications?user_id=1';
+    $headers = apiHeaders('GET', $uri);
+
+    $this->getJson($uri, $headers)->assertOk();
+
+    /**
+     * Тот же запрос с теми же заголовками внутри окна TTL —
+     * nonce уже израсходован.
+     */
+    $this->getJson($uri, $headers)->assertUnauthorized();
+});
+
+it('отклоняет запрос без nonce', function () : void {
+    $uri = '/api/notifications?user_id=1';
+    $headers = apiHeaders('GET', $uri);
+
+    unset($headers['X-Nonce']);
+
+    $this->getJson($uri, $headers)->assertUnauthorized();
 });
 
 it('не выполняет доменную логику без аутентификации', function () : void {

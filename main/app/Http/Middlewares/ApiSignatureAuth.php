@@ -30,19 +30,21 @@ class ApiSignatureAuth
     {
         $token = $request->bearerToken();
         $timestamp = $request->header('X-Timestamp');
+        $nonce = $request->header('X-Nonce');
         $signature = $request->header('X-Signature');
 
         /**
          * Неполный набор заголовков отсекается до создания DTO —
          * валидатор всегда получает полные данные подписи.
          */
-        if ($token === null || $timestamp === null || $signature === null) {
+        if ($token === null || $timestamp === null || $nonce === null || $signature === null) {
             return $this->unauthenticated();
         }
 
         $valid = $this->signature_validator->validate(new RequestSignatureDto(
             token: $token,
             timestamp: $timestamp,
+            nonce: $nonce,
             signature: $signature,
             method: $request->getMethod(),
             uri: $request->getRequestUri(),

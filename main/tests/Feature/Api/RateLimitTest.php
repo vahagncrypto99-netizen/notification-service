@@ -36,3 +36,17 @@ it('лимит одного клиента не задевает другого'
 
     $this->getJson('/api/notifications?user_id=1', $headers)->assertOk();
 });
+
+it('ротация фейковых токенов не обходит лимит: неизвестные токены считаются по IP', function () : void {
+    config(['auth.api.rate_limit' => 3]);
+
+    foreach (range(1, 3) as $i) {
+        $this->getJson('/api/notifications?user_id=1', [
+            'Authorization' => 'Bearer random-token-'.$i,
+        ])->assertUnauthorized();
+    }
+
+    $this->getJson('/api/notifications?user_id=1', [
+        'Authorization' => 'Bearer random-token-4',
+    ])->assertStatus(429);
+});
