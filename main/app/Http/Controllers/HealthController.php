@@ -16,11 +16,7 @@ class HealthController extends Controller
      * Liveness («процесс жив») — штатный /up.
      */
     #[OA\Get(
-        path: '/health',
-        summary: 'Readiness-проверка сервиса',
-        description: 'Состояние зависимостей (БД, брокер, кэш). Без аутентификации — для оркестратора/мониторинга.',
-        tags: ['Служебное'],
-        responses: [
+        path: '/health', description: 'Состояние зависимостей (БД, брокер, кэш). Без аутентификации — для оркестратора/мониторинга.', summary: 'Readiness-проверка сервиса', tags: ['Служебное'], responses: [
             new OA\Response(response: 200, description: 'Сервис здоров', content: new OA\JsonContent(properties: [
                 new OA\Property(property: 'success', type: 'boolean', example: true),
                 new OA\Property(property: 'message', type: 'string', example: 'Сервис здоров.'),

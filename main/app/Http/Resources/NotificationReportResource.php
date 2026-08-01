@@ -19,8 +19,18 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'user_id', type: 'integer', example: 42),
         new OA\Property(property: 'period_from', type: 'string', format: 'date', example: '2026-07-01'),
         new OA\Property(property: 'period_to', type: 'string', format: 'date', example: '2026-08-01'),
-        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'processing', 'done', 'failed'], example: 'done'),
-        new OA\Property(property: 'error', type: 'string', nullable: true, example: null),
+        new OA\Property(
+            property: 'status',
+            type: 'string',
+            example: 'done',
+            enum: ['pending', 'processing', 'done', 'failed']
+        ),
+        new OA\Property(
+            property: 'error',
+            type: 'string',
+            example: null,
+            nullable: true
+        ),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
     ]
 )]

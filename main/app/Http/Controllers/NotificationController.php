@@ -31,20 +31,29 @@ class NotificationController extends Controller
      * Создание уведомления.
      */
     #[OA\Post(
-        path: '/notifications',
-        summary: 'Создать уведомление',
-        description: 'Создаёт уведомление в статусе processing и ставит доставку в очередь.',
-        security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]],
-        tags: ['Уведомления'],
-        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
+        path: '/notifications', description: 'Создаёт уведомление в статусе processing и ставит доставку в очередь.', summary: 'Создать уведомление', security: [['bearer_token' => [], 'request_timestamp' => [], 'request_signature' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(
             required: ['message', 'user_id', 'channel'],
             properties: [
-                new OA\Property(property: 'message', type: 'string', maxLength: 500, example: 'Ваш заказ подтверждён'),
-                new OA\Property(property: 'user_id', type: 'integer', minimum: 1, example: 42),
-                new OA\Property(property: 'channel', type: 'string', enum: ['email', 'telegram'], example: 'email'),
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    example: 'Ваш заказ подтверждён',
+                    maxLength: 500
+                ),
+                new OA\Property(
+                    property: 'user_id',
+                    type: 'integer',
+                    example: 42,
+                    minimum: 1
+                ),
+                new OA\Property(
+                    property: 'channel',
+                    type: 'string',
+                    example: 'email',
+                    enum: ['email', 'telegram']
+                ),
             ]
-        )),
-        responses: [
+        )), tags: ['Уведомления'], responses: [
             new OA\Response(response: 201, description: 'Уведомление создано', content: new OA\JsonContent(properties: [
                 new OA\Property(property: 'success', type: 'boolean', example: true),
                 new OA\Property(property: 'message', type: 'string', example: 'Уведомление создано.'),
