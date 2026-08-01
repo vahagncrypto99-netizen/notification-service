@@ -28,7 +28,7 @@ class ApiSignatureValidator
         }
 
         $expected_signature = hash_hmac(
-            'sha256',
+            (string) config('auth.api.signature_algo'),
             $dto->timestamp.'.'.$dto->body,
             $secret
         );

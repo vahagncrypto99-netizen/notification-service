@@ -39,6 +39,6 @@ function apiHeaders(
     return [
         'Authorization' => 'Bearer '.$token,
         'X-Timestamp' => $timestamp,
-        'X-Signature' => hash_hmac('sha256', $timestamp.'.'.$body, $secret),
+        'X-Signature' => hash_hmac((string) config('auth.api.signature_algo'), $timestamp.'.'.$body, $secret),
     ];
 }

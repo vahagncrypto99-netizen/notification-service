@@ -62,6 +62,11 @@ return [
          * Окно валидности X-Timestamp в секундах (защита от replay).
          */
         'signature_ttl' => (int) env('API_SIGNATURE_TTL', 300),
+
+        /*
+         * Алгоритм HMAC-подписи (любой из hash_hmac_algos()).
+         */
+        'signature_algo' => env('API_SIGNATURE_ALGO', 'sha256'),
     ],
 
 ];
