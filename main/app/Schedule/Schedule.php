@@ -9,24 +9,23 @@ use Illuminate\Console\Scheduling\Schedule as SystemSchedule;
 class Schedule
 {
     /**
-     * Регистрация задач планировщика.
+     * Schedule constructor.
+     *
+     * @param  array<int, DomainScheduleInterface>  $schedules  шедулеры доменов
+     */
+    public function __construct(
+        protected array $schedules = [],
+    ) {
+        //
+    }
+
+    /**
+     * Регистрация задач всех доменов.
      */
     public function __invoke(SystemSchedule $schedule) : void
     {
-        /**
-         * Watchdog гарантии доставки: передиспатч уведомлений,
-         * зависших в processing (потерянные джобы).
-         */
-        $schedule->command('notification:redispatch-stuck')
-            ->everyFiveMinutes()
-            ->withoutOverlapping();
-
-        /**
-         * Watchdog отчётов: передиспатч зависших pending (потерянный
-         * dispatch) и processing (убитый воркер).
-         */
-        $schedule->command('notification:redispatch-stuck-reports')
-            ->everyFiveMinutes()
-            ->withoutOverlapping();
+        foreach ($this->schedules as $domain_schedule) {
+            $domain_schedule->run($schedule);
+        }
     }
 }

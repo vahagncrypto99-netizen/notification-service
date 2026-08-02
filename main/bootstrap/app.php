@@ -24,4 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))->withRouting(
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     Integration::handles($exceptions);
-})->withSchedule(new Schedule)->create();
+})->withSchedule(
+    fn (Illuminate\Console\Scheduling\Schedule $schedule) => app(Schedule::class)($schedule)
+)->create();

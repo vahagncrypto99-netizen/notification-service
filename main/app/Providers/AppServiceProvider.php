@@ -7,8 +7,10 @@ namespace App\Providers;
 use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Enum\ChannelEnum;
 use App\Base\Notification\Reports\ReportFormatterResolver;
+use App\Base\Notification\Schedule as NotificationSchedule;
 use App\Base\Notification\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
+use App\Schedule\Schedule;
 use App\Services\ApiSignatureValidator;
 use App\Services\Delivery\Mail\SenderFactory;
 use App\Services\EventPublisher\EventEnvelopeFactory;
@@ -31,6 +33,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register() : void
     {
+        /**
+         * Планировщик собирается из шедулеров доменов: новый домен
+         * добавляет свой класс-шедулер строкой в этот список.
+         */
+        $this->app->singleton(Schedule::class, function (Application $app) {
+            return new Schedule([
+                $app->make(NotificationSchedule::class),
+            ]);
+        });
+
         $this->app->singleton(ChannelSenderResolver::class, function (Application $app) {
             return new ChannelSenderResolver($app, (array) config('notification.channels'));
         });
