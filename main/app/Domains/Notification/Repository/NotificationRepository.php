@@ -6,6 +6,7 @@ namespace App\Domains\Notification\Repository;
 
 use App\Domains\Notification\Enum\ChannelEnum;
 use App\Domains\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Report\Contracts\NotificationStatisticsInterface;
 use App\Models\Notification;
 use App\Repository\Base;
 use Carbon\Carbon;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 /**
  * @extends Base<Notification>
  */
-class NotificationRepository extends Base
+class NotificationRepository extends Base implements NotificationStatisticsInterface
 {
     /**
      * Инициализация репозитория.

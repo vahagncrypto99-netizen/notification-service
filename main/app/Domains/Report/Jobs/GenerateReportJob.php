@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Report\Jobs;
 
-use App\Domains\Notification\Repository\NotificationRepository;
+use App\Domains\Report\Contracts\NotificationStatisticsInterface;
 use App\Domains\Report\Enum\ReportStatusEnum;
 use App\Domains\Report\Repository\NotificationReportRepository;
 use App\Domains\Report\Services\ReportFileStorage;
@@ -57,7 +57,7 @@ class GenerateReportJob extends Queue
      */
     public function handle(
         NotificationReportRepository $report_repository,
-        NotificationRepository $notification_repository,
+        NotificationStatisticsInterface $notification_statistics,
         ReportFileStorage $file_storage
     ) : void {
         /** @var NotificationReport|null $report */
@@ -99,7 +99,7 @@ class GenerateReportJob extends Queue
             $report->touch();
         }
 
-        $rows = $notification_repository->aggregateByChannel(
+        $rows = $notification_statistics->aggregateByChannel(
             $report->user_id,
             $report->period_from,
             $report->period_to

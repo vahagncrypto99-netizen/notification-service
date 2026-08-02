@@ -8,7 +8,9 @@ use App\Domains\Auth\ApiClientsParser;
 use App\Domains\Auth\ApiSignatureValidator;
 use App\Domains\Notification\Channels\ChannelSenderResolver;
 use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Repository\NotificationRepository;
 use App\Domains\Notification\Schedule as NotificationSchedule;
+use App\Domains\Report\Contracts\NotificationStatisticsInterface;
 use App\Domains\Report\Formatters\ReportFormatterResolver;
 use App\Domains\Report\Schedule as ReportSchedule;
 use App\Domains\Report\Services\ReportFileStorage;
@@ -46,6 +48,12 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(ReportSchedule::class),
             ]);
         });
+
+        /**
+         * Порт домена отчётов: статистику уведомлений поставляет
+         * репозиторий домена уведомлений.
+         */
+        $this->app->bind(NotificationStatisticsInterface::class, NotificationRepository::class);
 
         $this->app->singleton(ChannelSenderResolver::class, function (Application $app) {
             return new ChannelSenderResolver($app, (array) config('notification.channels'));
