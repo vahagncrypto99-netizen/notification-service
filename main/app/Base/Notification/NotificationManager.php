@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Base\Notification;
 
-use App\Base\Concerns\FailsOperations;
+use App\Concerns\FailsOperations;
 use App\Base\Notification\Actions\CreateNotification;
 use App\Base\Notification\Dto\CreateNotificationDto;
 use App\Base\Notification\Dto\NotificationHistoryDto;

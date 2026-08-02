@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Base\Report;
 
-use App\Base\Concerns\FailsOperations;
+use App\Concerns\FailsOperations;
 use App\Base\Report\Actions\RequestReport;
 use App\Base\Report\Dto\ReportFileDto;
 use App\Base\Report\Dto\RequestReportDto;
