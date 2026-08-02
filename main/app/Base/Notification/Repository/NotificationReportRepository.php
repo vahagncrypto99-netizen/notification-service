@@ -8,6 +8,7 @@ use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Models\NotificationReport;
 use App\Repository\Base;
 use Carbon\Carbon;
+use Closure;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -72,19 +73,19 @@ class NotificationReportRepository extends Base
     }
 
     /**
-     * Отчёты, зависшие в генерации дольше порога: pending — потерянный
-     * dispatch, processing — убитый воркер.
+     * Обход зависших отчётов пачками: pending — потерянный dispatch,
+     * processing — убитый воркер. chunkById пагинирует по id —
+     * сдвиг updated_at внутри обработки не ломает выборку.
      *
-     * @return Collection<int, NotificationReport>
+     * @param  Closure(Collection<int, NotificationReport>): void  $callback
      */
-    public function getStuck(Carbon $threshold, int $limit) : Collection
+    public function chunkStuck(Carbon $threshold, int $chunk_size, Closure $callback) : void
     {
-        return $this->query()
+        $this->query()
+            ->select(['id', 'updated_at'])
             ->whereIn('status', [ReportStatusEnum::Pending, ReportStatusEnum::Processing])
             ->where('updated_at', '<', $threshold)
-            ->orderBy('updated_at')
-            ->limit($limit)
-            ->get(['id', 'updated_at']);
+            ->chunkById($chunk_size, $callback);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Models\Notification;
 use App\Repository\Base;
 use Carbon\Carbon;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -48,20 +49,19 @@ class NotificationRepository extends Base
     }
 
     /**
-     * Уведомления, зависшие в обработке дольше порога (старые первыми).
+     * Обход зависших в processing уведомлений пачками. chunkById
+     * пагинирует по id — сдвиг updated_at внутри обработки
+     * не ломает выборку следующих пачек.
      *
-     * @return Collection<int, Notification>
+     * @param  Closure(Collection<int, Notification>): void  $callback
      */
-    public function getStuckInProcessing(Carbon $stuck_before, int $limit = 100) : Collection
+    public function chunkStuckInProcessing(Carbon $stuck_before, int $chunk_size, Closure $callback) : void
     {
-        return $this->query()->where(
-            'status',
-            NotificationStatusEnum::Processing
-        )->where(
-            'updated_at',
-            '<',
-            $stuck_before
-        )->orderBy('updated_at')->limit($limit)->get(['id', 'attempts_count', 'updated_at']);
+        $this->query()
+            ->select(['id', 'attempts_count', 'updated_at'])
+            ->where('status', NotificationStatusEnum::Processing)
+            ->where('updated_at', '<', $stuck_before)
+            ->chunkById($chunk_size, $callback);
     }
 
     /**
