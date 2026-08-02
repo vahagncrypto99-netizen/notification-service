@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Base\Notification\Enum\ReportStatusEnum;
 use App\Base\Notification\Jobs\GenerateReportJob;
+use App\Base\Notification\Jobs\RedispatchStuckReportsJob;
 use App\Models\NotificationReport;
 use Illuminate\Support\Facades\Queue;
 
@@ -16,7 +17,7 @@ it('передиспатчивает отчёты, зависшие в pending (
         'updated_at' => now()->subMinutes(30),
     ]);
 
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
 
     Queue::assertPushed(GenerateReportJob::class, 1);
 });
@@ -30,7 +31,7 @@ it('возвращает зависший processing в pending и переди�
         'updated_at' => now()->subMinutes(30),
     ]);
 
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
 
     expect($report->fresh()->status)->toBe(ReportStatusEnum::Pending);
 
@@ -49,7 +50,7 @@ it('не трогает свежие и терминальные отчёты', 
         'updated_at' => now()->subMinutes(30),
     ]);
 
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
 
     Queue::assertNothingPushed();
 });
@@ -63,7 +64,7 @@ it('дренирует бэклог больше одной пачки за од
 
     NotificationReport::query()->update(['updated_at' => now()->subMinutes(30)]);
 
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
 
     Queue::assertPushed(GenerateReportJob::class, 5);
 });
@@ -77,8 +78,8 @@ it('повторный запуск сразу после передиспатч
         'updated_at' => now()->subMinutes(30),
     ]);
 
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
-    $this->artisan('notification:redispatch-stuck-reports')->assertSuccessful();
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
+    app()->call([new RedispatchStuckReportsJob, 'handle']);
 
     Queue::assertPushed(GenerateReportJob::class, 1);
 });

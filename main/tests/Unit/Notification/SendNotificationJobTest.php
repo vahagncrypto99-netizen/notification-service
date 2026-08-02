@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Base\Notification\Enum\NotificationStatusEnum;
 use App\Base\Notification\Events\NotificationFailed;
 use App\Base\Notification\Events\NotificationSent;
+use App\Base\Notification\Jobs\RedispatchStuckNotificationsJob;
 use App\Base\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Event;
@@ -106,7 +107,7 @@ describe('watchdog', function () : void {
             'updated_at' => now()->subMinutes(30),
         ]);
 
-        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+        app()->call([new RedispatchStuckNotificationsJob, 'handle']);
 
         Queue::assertPushed(SendNotificationJob::class, 1);
     });
@@ -123,7 +124,7 @@ describe('watchdog', function () : void {
             'updated_at' => now()->subMinutes(30),
         ]);
 
-        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+        app()->call([new RedispatchStuckNotificationsJob, 'handle']);
 
         Queue::assertNothingPushed();
     });
@@ -137,7 +138,7 @@ describe('watchdog', function () : void {
             'updated_at' => now()->subMinutes(30),
         ]);
 
-        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+        app()->call([new RedispatchStuckNotificationsJob, 'handle']);
 
         expect(
             $stuck->fresh()->updated_at->greaterThan(now()->subMinute())
@@ -146,7 +147,7 @@ describe('watchdog', function () : void {
         /**
          * Повторный запуск сразу после — ничего не передиспатчивает.
          */
-        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+        app()->call([new RedispatchStuckNotificationsJob, 'handle']);
 
         Queue::assertPushed(SendNotificationJob::class, 1);
     });
@@ -162,7 +163,7 @@ describe('watchdog: дренаж', function () : void {
 
         Notification::query()->update(['updated_at' => now()->subMinutes(30)]);
 
-        $this->artisan('notification:redispatch-stuck')->assertSuccessful();
+        app()->call([new RedispatchStuckNotificationsJob, 'handle']);
 
         Queue::assertPushed(SendNotificationJob::class, 5);
     });

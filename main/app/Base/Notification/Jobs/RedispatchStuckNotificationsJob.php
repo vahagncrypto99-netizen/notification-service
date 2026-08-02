@@ -2,39 +2,39 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace App\Base\Notification\Jobs;
 
-use App\Base\Notification\Jobs\SendNotificationJob;
 use App\Base\Notification\Repository\NotificationRepository;
+use App\Queue\Queue;
+use App\Queue\QueueSettings;
 use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class RedispatchStuckNotifications extends Command
+class RedispatchStuckNotificationsJob extends Queue
 {
     /**
-     * Сигнатура консольной команды.
+     * Таймаут выполнения.
      *
-     * @var string
+     * @var int
      */
-    protected $signature = 'notification:redispatch-stuck';
+    public $timeout = QueueSettings::LOW_PRIORITY_TIMEOUT;
 
     /**
-     * Описание консольной команды.
-     *
-     * @var string
+     * RedispatchStuckNotificationsJob constructor.
      */
-    protected $description = 'Передиспатч уведомлений, зависших в статусе processing';
+    public function __construct()
+    {
+        $this->onQueue(QueueSettings::LOW_PRIORITY_QUEUE);
+    }
 
     /**
-     * Выполнение команды.
+     * Watchdog доставки: передиспатч уведомлений, зависших
+     * в processing дольше порога (потерянные джобы).
      */
-    public function handle(NotificationRepository $repository) : int
+    public function handle(NotificationRepository $repository) : void
     {
         $threshold_minutes = (int) config('notification.watchdog.stuck_threshold_minutes');
         $batch_limit = (int) config('notification.watchdog.batch_limit');
-
-        $total = 0;
 
         /**
          * Дренаж циклом до опустошения: сдвиг updated_at выводит
@@ -61,12 +61,6 @@ class RedispatchStuckNotifications extends Command
                     'stuck_since' => $notification->updated_at->toIso8601String(),
                 ]);
             }
-
-            $total += $stuck->count();
         } while ($stuck->count() === $batch_limit);
-
-        $this->info($total > 0 ? "Передиспатчено уведомлений: {$total}." : 'Зависших уведомлений нет.');
-
-        return self::SUCCESS;
     }
 }

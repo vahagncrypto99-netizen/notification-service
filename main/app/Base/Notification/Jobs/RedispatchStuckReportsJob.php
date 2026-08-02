@@ -2,40 +2,40 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace App\Base\Notification\Jobs;
 
-use App\Base\Notification\Jobs\GenerateReportJob;
 use App\Base\Notification\Repository\NotificationReportRepository;
 use App\Models\NotificationReport;
+use App\Queue\Queue;
+use App\Queue\QueueSettings;
 use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class RedispatchStuckReports extends Command
+class RedispatchStuckReportsJob extends Queue
 {
     /**
-     * Сигнатура консольной команды.
+     * Таймаут выполнения.
      *
-     * @var string
+     * @var int
      */
-    protected $signature = 'notification:redispatch-stuck-reports';
+    public $timeout = QueueSettings::LOW_PRIORITY_TIMEOUT;
 
     /**
-     * Описание консольной команды.
-     *
-     * @var string
+     * RedispatchStuckReportsJob constructor.
      */
-    protected $description = 'Передиспатч отчётов, зависших в статусах pending и processing';
+    public function __construct()
+    {
+        $this->onQueue(QueueSettings::LOW_PRIORITY_QUEUE);
+    }
 
     /**
-     * Выполнение команды.
+     * Watchdog отчётов: передиспатч зависших pending (потерянный
+     * dispatch) и processing (убитый воркер).
      */
-    public function handle(NotificationReportRepository $repository) : int
+    public function handle(NotificationReportRepository $repository) : void
     {
         $threshold_minutes = (int) config('notification.watchdog.report_stuck_threshold_minutes');
         $batch_limit = (int) config('notification.watchdog.batch_limit');
-
-        $total = 0;
 
         /**
          * Дренаж циклом до опустошения: сдвиг updated_at выводит
@@ -72,12 +72,6 @@ class RedispatchStuckReports extends Command
                     'stuck_since' => $report->updated_at->toIso8601String(),
                 ]);
             }
-
-            $total += $stuck->count();
         } while ($stuck->count() === $batch_limit);
-
-        $this->info($total > 0 ? "Передиспатчено отчётов: {$total}." : 'Зависших отчётов нет.');
-
-        return self::SUCCESS;
     }
 }
