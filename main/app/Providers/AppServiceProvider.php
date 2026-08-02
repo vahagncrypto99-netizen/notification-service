@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domains\Auth\ApiClientsParser;
+use App\Domains\Auth\ApiSignatureValidator;
 use App\Domains\Notification\Channels\ChannelSenderResolver;
 use App\Domains\Notification\Enum\ChannelEnum;
 use App\Domains\Notification\Schedule as NotificationSchedule;
@@ -12,7 +14,6 @@ use App\Domains\Report\Schedule as ReportSchedule;
 use App\Domains\Report\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
 use App\Schedule\Schedule;
-use App\Services\ApiSignatureValidator;
 use App\Services\Delivery\Mail\SenderFactory;
 use App\Services\EventPublisher\EventEnvelopeFactory;
 use App\Services\EventPublisher\EventPublisherInterface;
@@ -93,10 +94,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(ApiSignatureValidator::class, function (Application $app) {
+            $parser = new ApiClientsParser;
+
             return new ApiSignatureValidator(
-                $this->parseApiClients((string) config('auth.api.clients')),
+                $parser->parse((string) config('auth.api.clients')),
                 (int) config('auth.api.signature_ttl'),
-                $this->validatedSignatureAlgo((string) config('auth.api.signature_algo')),
+                $parser->validatedAlgo((string) config('auth.api.signature_algo')),
                 $app->make('cache.store'),
             );
         });
@@ -149,71 +152,5 @@ class AppServiceProvider extends ServiceProvider
                 fn () => ApiResponse::error('Слишком много запросов.', 429)
             );
         });
-    }
-
-    /**
-     * Минимальная длина секрета подписи.
-     */
-    private const int MIN_SECRET_LENGTH = 12;
-
-    /**
-     * Разбор пар «токен:секрет_подписи» из конфигурации.
-     *
-     * @return array<string, string>
-     *
-     * @throws RuntimeException при некорректной или пустой конфигурации
-     */
-    private function parseApiClients(string $raw) : array
-    {
-        $clients = [];
-
-        foreach (array_filter(array_map('trim', explode(',', $raw))) as $pair) {
-            $token = strstr($pair, ':', true);
-            $secret = (string) substr((string) strstr($pair, ':'), 1);
-
-            if ($token === false || $token === '' || $secret === '') {
-                throw new RuntimeException(
-                    "Некорректная пара в API_AUTH_CLIENTS: '{$pair}' — ожидается формат token:secret."
-                );
-            }
-
-            if (isset($clients[$token])) {
-                throw new RuntimeException("Дубликат токена в API_AUTH_CLIENTS: '{$token}'.");
-            }
-
-            if (strlen($secret) < self::MIN_SECRET_LENGTH) {
-                throw new RuntimeException(
-                    "Секрет токена '{$token}' короче ".self::MIN_SECRET_LENGTH.' символов.'
-                );
-            }
-
-            $clients[$token] = $secret;
-        }
-
-        /**
-         * Пустая карта — все запросы молча получали бы 401;
-         * ошибка конфигурации должна быть видна на старте.
-         */
-        if ($clients === []) {
-            throw new RuntimeException('API_AUTH_CLIENTS пуст — не настроен ни один клиент API.');
-        }
-
-        return $clients;
-    }
-
-    /**
-     * Проверка, что настроенный HMAC-алгоритм поддерживается.
-     *
-     * @throws RuntimeException для неподдерживаемого алгоритма
-     */
-    private function validatedSignatureAlgo(string $algo) : string
-    {
-        if (! in_array($algo, hash_hmac_algos(), true)) {
-            throw new RuntimeException(
-                "Неподдерживаемый алгоритм подписи в API_SIGNATURE_ALGO: '{$algo}'."
-            );
-        }
-
-        return $algo;
     }
 }

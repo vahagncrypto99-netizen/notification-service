@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Domains\Auth;
 
-use App\Dto\RequestSignatureDto;
+use App\Domains\Auth\Dto\RequestSignatureDto;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 

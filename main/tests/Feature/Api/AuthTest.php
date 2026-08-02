@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Domains\Auth\ApiSignatureValidator;
 use App\Models\Notification;
-use App\Services\ApiSignatureValidator;
 
 it('отклоняет запрос без заголовков аутентификации', function () : void {
     $this->getJson('/api/notifications?user_id=1')->assertUnauthorized()->assertJson([

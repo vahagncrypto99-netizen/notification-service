@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Dto\RequestSignatureDto;
-use App\Services\ApiSignatureValidator;
+use App\Domains\Auth\ApiSignatureValidator;
+use App\Domains\Auth\Dto\RequestSignatureDto;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Support\Str;

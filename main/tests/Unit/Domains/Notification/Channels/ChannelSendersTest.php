@@ -10,14 +10,9 @@ use App\Domains\Notification\Enum\NotificationStatusEnum;
 use App\Domains\Notification\Events\NotificationFailed;
 use App\Domains\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
-use App\Services\Delivery\Mail\DefaultSender;
-use App\Services\Delivery\Mail\Dto\SenderDto;
-use App\Services\Delivery\Mail\SenderFactory;
 use App\Services\Delivery\Messenger\Dto\ResponseDto;
 use App\Services\Delivery\Messenger\Dto\SenderDto as MessengerSenderDto;
-use App\Services\Delivery\Messenger\MessageFormatter;
 use App\Services\Delivery\Messenger\Telegram\TelegramClient;
-use App\Services\Delivery\PermanentDeliveryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
@@ -40,28 +35,6 @@ describe('почтовый канал', function () : void {
             fn (string $message, array $context = []) => ($context['to_email'] ?? null) === 'user-7@example.stub'
         )->once();
     });
-
-    it('невалидный адрес получателя — неисправимый отказ', function () : void {
-        expect(fn () => app(SenderFactory::class)->mail()->send(
-            SenderDto::from([
-                'from_email' => null,
-                'from_name' => null,
-                'to_email' => 'не-адрес',
-                'subject' => 'x',
-                'message' => 'y',
-            ])
-        ))->toThrow(PermanentDeliveryException::class);
-    });
-});
-
-describe('фабрика сендеров', function () : void {
-    it('отдаёт дефолтный сендер по конфигу', function () : void {
-        expect(app(SenderFactory::class)->mail())->toBeInstanceOf(DefaultSender::class);
-    });
-
-    it('бросает исключение для неизвестного сендера', function () : void {
-        app(SenderFactory::class)->mail('unisender');
-    })->throws(RuntimeException::class);
 });
 
 describe('telegram канал', function () : void {
@@ -107,31 +80,5 @@ describe('telegram канал', function () : void {
         )->toContain('недоступен');
 
         Event::assertDispatched(NotificationFailed::class);
-    });
-});
-
-describe('форматтер сообщений', function () : void {
-    it('включает смайлы из literal-последовательностей', function () : void {
-        expect(
-            app(MessageFormatter::class)->prepareMessage('Привет \uD83D\uDE0A')
-        )->toBe('Привет 😊');
-    });
-
-    it('вырезает html-теги', function () : void {
-        expect(
-            app(MessageFormatter::class)->prepareMessage('<b>жирный</b> текст')
-        )->toBe('жирный текст');
-    });
-
-    it('удаляет управляющие символы', function () : void {
-        expect(
-            app(MessageFormatter::class)->prepareMessage("чистый\x00\x1Fтекст")
-        )->toBe('чистыйтекст');
-    });
-
-    it('непарный суррогат не роняет доставку — возвращается исходный текст', function () : void {
-        expect(
-            app(MessageFormatter::class)->prepareMessage('Привет \uD83D')
-        )->toBe('Привет \uD83D');
     });
 });

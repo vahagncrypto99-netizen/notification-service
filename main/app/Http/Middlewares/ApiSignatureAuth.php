@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middlewares;
 
-use App\Dto\RequestSignatureDto;
+use App\Domains\Auth\ApiSignatureValidator;
+use App\Domains\Auth\Dto\RequestSignatureDto;
 use App\Http\Responses\ApiResponse;
-use App\Services\ApiSignatureValidator;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
