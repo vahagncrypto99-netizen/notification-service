@@ -1,7 +1,7 @@
 <?php
 
-use App\Base\Notification\Channels\EmailChannelSender;
-use App\Base\Notification\Channels\TelegramChannelSender;
+use App\Domains\Notification\Channels\EmailChannelSender;
+use App\Domains\Notification\Channels\TelegramChannelSender;
 
 return [
 

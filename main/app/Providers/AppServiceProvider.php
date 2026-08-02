@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Base\Notification\Channels\ChannelSenderResolver;
-use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Schedule as NotificationSchedule;
-use App\Base\Report\Formatters\ReportFormatterResolver;
-use App\Base\Report\Schedule as ReportSchedule;
-use App\Base\Report\Services\ReportFileStorage;
+use App\Domains\Notification\Channels\ChannelSenderResolver;
+use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Schedule as NotificationSchedule;
+use App\Domains\Report\Formatters\ReportFormatterResolver;
+use App\Domains\Report\Schedule as ReportSchedule;
+use App\Domains\Report\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
 use App\Schedule\Schedule;
 use App\Services\ApiSignatureValidator;

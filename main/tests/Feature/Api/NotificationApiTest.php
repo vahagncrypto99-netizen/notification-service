@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Enum\NotificationStatusEnum;
-use App\Base\Notification\Jobs\SendNotificationJob;
-use App\Base\Notification\Repository\NotificationRepository;
+use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Notification\Jobs\SendNotificationJob;
+use App\Domains\Notification\Repository\NotificationRepository;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Queue;
 

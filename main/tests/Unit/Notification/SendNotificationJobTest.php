@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Enum\NotificationStatusEnum;
-use App\Base\Notification\Events\NotificationFailed;
-use App\Base\Notification\Events\NotificationSent;
-use App\Base\Notification\Jobs\RedispatchStuckNotificationsJob;
-use App\Base\Notification\Jobs\SendNotificationJob;
+use App\Domains\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Notification\Events\NotificationFailed;
+use App\Domains\Notification\Events\NotificationSent;
+use App\Domains\Notification\Jobs\RedispatchStuckNotificationsJob;
+use App\Domains\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Base\Report\Enum\ReportStatusEnum;
-use App\Base\Report\Jobs\GenerateReportJob;
-use App\Base\Report\Jobs\RedispatchStuckReportsJob;
+use App\Domains\Report\Enum\ReportStatusEnum;
+use App\Domains\Report\Jobs\GenerateReportJob;
+use App\Domains\Report\Jobs\RedispatchStuckReportsJob;
 use App\Models\NotificationReport;
 use Illuminate\Support\Facades\Queue;
 

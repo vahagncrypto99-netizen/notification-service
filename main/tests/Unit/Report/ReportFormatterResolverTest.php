@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Base\Report\Exceptions\ReportFormatterNotConfiguredException;
-use App\Base\Report\Formatters\CsvReportFormatter;
-use App\Base\Report\Formatters\ReportFormatterResolver;
+use App\Domains\Report\Exceptions\ReportFormatterNotConfiguredException;
+use App\Domains\Report\Formatters\CsvReportFormatter;
+use App\Domains\Report\Formatters\ReportFormatterResolver;
 
 it('резолвит csv-стратегию из конфига', function () : void {
     expect(

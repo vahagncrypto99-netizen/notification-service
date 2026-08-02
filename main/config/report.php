@@ -1,6 +1,6 @@
 <?php
 
-use App\Base\Report\Formatters\CsvReportFormatter;
+use App\Domains\Report\Formatters\CsvReportFormatter;
 
 return [
 

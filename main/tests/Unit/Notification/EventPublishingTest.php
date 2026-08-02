@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Jobs\SendNotificationJob;
+use App\Domains\Notification\Jobs\SendNotificationJob;
 use App\Dto\EventEnvelopeDto;
 use App\Models\Notification;
 use App\Services\EventPublisher\EventEnvelopeFactory;

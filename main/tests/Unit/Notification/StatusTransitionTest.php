@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Enum\NotificationStatusEnum;
-use App\Base\Notification\Repository\NotificationRepository;
+use App\Domains\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Notification\Repository\NotificationRepository;
 use App\Models\Notification;
 
 it('переводит processing в sent', function () : void {

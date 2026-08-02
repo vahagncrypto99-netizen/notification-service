@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Enum\NotificationStatusEnum;
 use App\Models\Notification;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

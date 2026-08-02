@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Base\Report\Enum\ReportStatusEnum;
+use App\Domains\Report\Enum\ReportStatusEnum;
 use Carbon\Carbon;
 use Database\Factories\NotificationReportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Channels\EmailChannelSender;
-use App\Base\Notification\Channels\TelegramChannelSender;
-use App\Base\Notification\Dto\ChannelMessageDto;
-use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Enum\NotificationStatusEnum;
-use App\Base\Notification\Events\NotificationFailed;
-use App\Base\Notification\Jobs\SendNotificationJob;
+use App\Domains\Notification\Channels\EmailChannelSender;
+use App\Domains\Notification\Channels\TelegramChannelSender;
+use App\Domains\Notification\Dto\ChannelMessageDto;
+use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Enum\NotificationStatusEnum;
+use App\Domains\Notification\Events\NotificationFailed;
+use App\Domains\Notification\Jobs\SendNotificationJob;
 use App\Models\Notification;
 use App\Services\Delivery\Mail\DefaultSender;
 use App\Services\Delivery\Mail\Dto\SenderDto;

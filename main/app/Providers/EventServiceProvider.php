@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Base\Notification\Listeners\NotificationEventSubscriber;
+use App\Domains\Notification\Listeners\NotificationEventSubscriber;
 
 class EventServiceProvider extends \Illuminate\Foundation\Support\Providers\EventServiceProvider
 {

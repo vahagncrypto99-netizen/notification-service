@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Dto\CreateNotificationDto;
-use App\Base\Notification\Jobs\SendNotificationJob;
-use App\Base\Notification\NotificationManager;
-use App\Base\Report\Dto\RequestReportDto;
-use App\Base\Report\Jobs\GenerateReportJob;
-use App\Base\Report\ReportManager;
+use App\Domains\Notification\Dto\CreateNotificationDto;
+use App\Domains\Notification\Jobs\SendNotificationJob;
+use App\Domains\Notification\NotificationManager;
+use App\Domains\Report\Dto\RequestReportDto;
+use App\Domains\Report\Jobs\GenerateReportJob;
+use App\Domains\Report\ReportManager;
 use App\Queue\QueueSettings;
 use Illuminate\Support\Facades\Queue;
 

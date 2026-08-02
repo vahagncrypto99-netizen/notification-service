@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Base\Notification\Dto\CreateNotificationDto;
-use App\Base\Notification\Dto\NotificationHistoryDto;
-use App\Base\Notification\NotificationManager;
+use App\Domains\Notification\Dto\CreateNotificationDto;
+use App\Domains\Notification\Dto\NotificationHistoryDto;
+use App\Domains\Notification\NotificationManager;
 use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationResource;
 use App\Http\Responses\ApiResponse;

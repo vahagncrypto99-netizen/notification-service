@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Channels\ChannelSenderResolver;
-use App\Base\Notification\Channels\EmailChannelSender;
-use App\Base\Notification\Channels\TelegramChannelSender;
-use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Exceptions\ChannelSenderNotConfiguredException;
+use App\Domains\Notification\Channels\ChannelSenderResolver;
+use App\Domains\Notification\Channels\EmailChannelSender;
+use App\Domains\Notification\Channels\TelegramChannelSender;
+use App\Domains\Notification\Enum\ChannelEnum;
+use App\Domains\Notification\Exceptions\ChannelSenderNotConfiguredException;
 
 it('резолвит email-отправитель', function () : void {
     expect(
