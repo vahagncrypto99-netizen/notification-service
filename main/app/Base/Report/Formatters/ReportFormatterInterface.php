@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Reports;
+namespace App\Base\Report\Formatters;
 
 interface ReportFormatterInterface
 {

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification;
+namespace App\Base\Report;
 
-use App\Base\Notification\Actions\RequestReport;
-use App\Base\Notification\Concerns\FailsOperations;
-use App\Base\Notification\Dto\ReportFileDto;
-use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\Enum\ReportStatusEnum;
-use App\Base\Notification\Jobs\GenerateReportJob;
-use App\Base\Notification\Repository\NotificationReportRepository;
-use App\Base\Notification\Services\ReportFileStorage;
+use App\Base\Concerns\FailsOperations;
+use App\Base\Report\Actions\RequestReport;
+use App\Base\Report\Dto\ReportFileDto;
+use App\Base\Report\Dto\RequestReportDto;
+use App\Base\Report\Enum\ReportStatusEnum;
+use App\Base\Report\Jobs\GenerateReportJob;
+use App\Base\Report\Repository\NotificationReportRepository;
+use App\Base\Report\Services\ReportFileStorage;
 use App\Exceptions\OperationException;
 use App\Models\NotificationReport;
 use Throwable;

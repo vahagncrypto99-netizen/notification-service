@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Base\Notification\Enum\ReportStatusEnum;
+use App\Base\Report\Enum\ReportStatusEnum;
 use App\Models\NotificationReport;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Repository;
+namespace App\Base\Report\Repository;
 
-use App\Base\Notification\Enum\ReportStatusEnum;
+use App\Base\Report\Enum\ReportStatusEnum;
 use App\Models\NotificationReport;
 use App\Repository\Base;
 use Carbon\Carbon;

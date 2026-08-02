@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Jobs;
+namespace App\Base\Report\Jobs;
 
-use App\Base\Notification\Enum\ReportStatusEnum;
-use App\Base\Notification\Repository\NotificationReportRepository;
 use App\Base\Notification\Repository\NotificationRepository;
-use App\Base\Notification\Services\ReportFileStorage;
+use App\Base\Report\Enum\ReportStatusEnum;
+use App\Base\Report\Repository\NotificationReportRepository;
+use App\Base\Report\Services\ReportFileStorage;
 use App\Models\NotificationReport;
 use App\Queue\Queue;
 use App\Queue\QueueSettings;

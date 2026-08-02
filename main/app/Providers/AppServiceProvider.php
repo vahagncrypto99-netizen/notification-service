@@ -6,9 +6,10 @@ namespace App\Providers;
 
 use App\Base\Notification\Channels\ChannelSenderResolver;
 use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Reports\ReportFormatterResolver;
 use App\Base\Notification\Schedule as NotificationSchedule;
-use App\Base\Notification\Services\ReportFileStorage;
+use App\Base\Report\Formatters\ReportFormatterResolver;
+use App\Base\Report\Schedule as ReportSchedule;
+use App\Base\Report\Services\ReportFileStorage;
 use App\Http\Responses\ApiResponse;
 use App\Schedule\Schedule;
 use App\Services\ApiSignatureValidator;
@@ -18,6 +19,7 @@ use App\Services\EventPublisher\EventPublisherInterface;
 use App\Services\EventPublisher\NullEventPublisher;
 use App\Services\EventPublisher\RabbitMqEventPublisher;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Schedule::class, function (Application $app) {
             return new Schedule([
                 $app->make(NotificationSchedule::class),
+                $app->make(ReportSchedule::class),
             ]);
         });
 
@@ -50,8 +53,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ReportFormatterResolver::class, function (Application $app) {
             return new ReportFormatterResolver(
                 $app,
-                (string) config('notification.reports.format'),
-                (array) config('notification.reports.formatters'),
+                (string) config('report.format'),
+                (array) config('report.formatters'),
             );
         });
 
@@ -62,8 +65,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReportFileStorage::class, function (Application $app) {
             return new ReportFileStorage(
                 $app->make(ReportFormatterResolver::class),
-                Storage::disk((string) config('notification.reports.disk')),
-                (string) config('notification.reports.directory'),
+                Storage::disk((string) config('report.disk')),
+                (string) config('report.directory'),
             );
         });
 
@@ -102,7 +105,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Загрузка сервисов: fail-fast валидация конфигурации и rate limiter.
      *
-     * @throws RuntimeException при некорректной конфигурации
+     * @throws RuntimeException|BindingResolutionException при некорректной конфигурации
      */
     public function boot() : void
     {
@@ -151,7 +154,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Минимальная длина секрета подписи.
      */
-    private const MIN_SECRET_LENGTH = 12;
+    private const int MIN_SECRET_LENGTH = 12;
 
     /**
      * Разбор пар «токен:секрет_подписи» из конфигурации.

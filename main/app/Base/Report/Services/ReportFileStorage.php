@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Services;
+namespace App\Base\Report\Services;
 
-use App\Base\Notification\Dto\ReportFileDto;
-use App\Base\Notification\Exceptions\ReportFormatterNotConfiguredException;
-use App\Base\Notification\Reports\ReportFormatterResolver;
+use App\Base\Report\Dto\ReportFileDto;
+use App\Base\Report\Exceptions\ReportFormatterNotConfiguredException;
+use App\Base\Report\Formatters\ReportFormatterResolver;
 use App\Exceptions\OperationException;
 use App\Models\NotificationReport;
 use Illuminate\Filesystem\FilesystemAdapter;

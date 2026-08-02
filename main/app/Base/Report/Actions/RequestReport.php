@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Actions;
+namespace App\Base\Report\Actions;
 
-use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\Enum\ReportStatusEnum;
-use App\Base\Notification\Repository\NotificationReportRepository;
+use App\Base\Report\Dto\RequestReportDto;
+use App\Base\Report\Enum\ReportStatusEnum;
+use App\Base\Report\Repository\NotificationReportRepository;
 use App\Models\NotificationReport;
 
 class RequestReport

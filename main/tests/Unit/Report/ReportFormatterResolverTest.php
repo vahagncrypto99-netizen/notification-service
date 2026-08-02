@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Base\Notification\Exceptions\ReportFormatterNotConfiguredException;
-use App\Base\Notification\Reports\CsvReportFormatter;
-use App\Base\Notification\Reports\ReportFormatterResolver;
+use App\Base\Report\Exceptions\ReportFormatterNotConfiguredException;
+use App\Base\Report\Formatters\CsvReportFormatter;
+use App\Base\Report\Formatters\ReportFormatterResolver;
 
 it('резолвит csv-стратегию из конфига', function () : void {
     expect(
@@ -13,13 +13,13 @@ it('резолвит csv-стратегию из конфига', function () : 
 });
 
 it('бросает исключение для формата без стратегии', function () : void {
-    config(['notification.reports.format' => 'xlsx']);
+    config(['report.format' => 'xlsx']);
 
     app(ReportFormatterResolver::class)->resolve();
 })->throws(ReportFormatterNotConfiguredException::class);
 
 it('бросает исключение для класса, не реализующего контракт', function () : void {
-    config(['notification.reports.formatters' => ['csv' => stdClass::class]]);
+    config(['report.formatters' => ['csv' => stdClass::class]]);
 
     app(ReportFormatterResolver::class)->resolve();
 })->throws(ReportFormatterNotConfiguredException::class);

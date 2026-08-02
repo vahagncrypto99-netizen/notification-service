@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Concerns;
+namespace App\Base\Concerns;
 
 use App\Exceptions\OperationException;
 use Illuminate\Support\Facades\Log;

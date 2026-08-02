@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Reports;
+namespace App\Base\Report\Formatters;
 
-use App\Base\Notification\Exceptions\ReportFormatterNotConfiguredException;
+use App\Base\Report\Exceptions\ReportFormatterNotConfiguredException;
 use Illuminate\Contracts\Container\Container;
 
 class ReportFormatterResolver

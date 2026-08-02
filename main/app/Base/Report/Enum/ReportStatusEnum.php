@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Enum;
+namespace App\Base\Report\Enum;
 
 enum ReportStatusEnum : string
 {

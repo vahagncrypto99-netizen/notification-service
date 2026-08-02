@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Exceptions;
+namespace App\Base\Report\Exceptions;
 
 use RuntimeException;
 

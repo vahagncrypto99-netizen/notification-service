@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Base\Notification\Enum\ChannelEnum;
-use App\Base\Notification\Enum\ReportStatusEnum;
-use App\Base\Notification\Jobs\GenerateReportJob;
+use App\Base\Report\Enum\ReportStatusEnum;
+use App\Base\Report\Jobs\GenerateReportJob;
 use App\Models\Notification;
 use App\Models\NotificationReport;
 use Illuminate\Support\Facades\Queue;

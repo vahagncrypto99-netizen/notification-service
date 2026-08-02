@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Dto;
+namespace App\Base\Report\Dto;
 
 use Spatie\LaravelData\Data;
 

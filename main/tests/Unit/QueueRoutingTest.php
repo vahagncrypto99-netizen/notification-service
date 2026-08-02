@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Base\Notification\Dto\CreateNotificationDto;
-use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\Jobs\GenerateReportJob;
 use App\Base\Notification\Jobs\SendNotificationJob;
 use App\Base\Notification\NotificationManager;
-use App\Base\Notification\ReportManager;
+use App\Base\Report\Dto\RequestReportDto;
+use App\Base\Report\Jobs\GenerateReportJob;
+use App\Base\Report\ReportManager;
 use App\Queue\QueueSettings;
 use Illuminate\Support\Facades\Queue;
 

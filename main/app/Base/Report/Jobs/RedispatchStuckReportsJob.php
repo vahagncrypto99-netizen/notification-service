@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Base\Notification\Jobs;
+namespace App\Base\Report\Jobs;
 
-use App\Base\Notification\Repository\NotificationReportRepository;
+use App\Base\Report\Repository\NotificationReportRepository;
 use App\Models\NotificationReport;
 use App\Queue\Queue;
 use App\Queue\QueueSettings;
@@ -45,8 +45,8 @@ class RedispatchStuckReportsJob extends Queue implements ShouldBeUnique
      */
     public function handle(NotificationReportRepository $repository) : void
     {
-        $threshold_minutes = (int) config('notification.watchdog.report_stuck_threshold_minutes');
-        $batch_limit = (int) config('notification.watchdog.batch_limit');
+        $threshold_minutes = (int) config('report.watchdog.stuck_threshold_minutes');
+        $batch_limit = (int) config('report.watchdog.batch_limit');
 
         $repository->chunkStuck(
             Carbon::now()->subMinutes($threshold_minutes),

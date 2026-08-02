@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Base\Notification\Dto\RequestReportDto;
-use App\Base\Notification\ReportManager;
+use App\Base\Report\Dto\RequestReportDto;
+use App\Base\Report\ReportManager;
 use App\Exceptions\OperationException;
 use App\Http\Resources\NotificationReportResource;
 use App\Http\Responses\ApiResponse;

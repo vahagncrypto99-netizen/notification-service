@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Base\Notification;
 
 use App\Base\Notification\Jobs\RedispatchStuckNotificationsJob;
-use App\Base\Notification\Jobs\RedispatchStuckReportsJob;
 use App\Schedule\DomainScheduleInterface;
 use Illuminate\Console\Scheduling\Schedule as SystemSchedule;
 
@@ -21,11 +20,5 @@ class Schedule implements DomainScheduleInterface
          * зависших в processing (потерянные джобы).
          */
         $schedule->job(new RedispatchStuckNotificationsJob)->everyFiveMinutes();
-
-        /**
-         * Watchdog отчётов: передиспатч зависших pending (потерянный
-         * dispatch) и processing (убитый воркер).
-         */
-        $schedule->job(new RedispatchStuckReportsJob)->everyFiveMinutes();
     }
 }
